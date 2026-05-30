@@ -79,37 +79,31 @@ This project provides foundational services for document preview components in t
 
 📚 **Preview Component Documentation**: [https://chaxus.github.io/ran/src/ranui/preview/](https://chaxus.github.io/ran/src/ranui/preview/)
 
-## 🧩 iframe 嵌入使用方式
+## 🧩 Embedding via iframe
 
-本项目支持通过 iframe 嵌入到其他业务系统中。推荐架构是：**父系统负责鉴权、下载文件和上传保存结果；iframe 只负责文档编辑**。这样 token、cookie、业务接口都留在父系统内，编辑器不需要知道业务系统的授权细节。
+This project supports embedding into other systems via iframe. The recommended architecture is: **the parent system handles authentication, file fetching, and upload; the iframe handles document editing only**. This keeps tokens, cookies, and business APIs inside the parent system — the editor never needs to know about your auth details.
 
-项目内置了一个示例页面：
-
-```text
-/embed-demo.html
-```
-
-本地启动后可以访问：
+A built-in demo page is included:
 
 ```text
 http://127.0.0.1:8082/embed-demo.html
 ```
 
-### 1. 嵌入编辑器
+### 1. Embed the editor
 
 ```html
-<iframe id="documentEditor" src="http://127.0.0.1:8082/?embed=1" style="width: 100%; height: 720px; border: 0"></iframe>
+<iframe id=”documentEditor” src=”http://127.0.0.1:8082/?embed=1” style=”width: 100%; height: 720px; border: 0”></iframe>
 ```
 
-如果需要限制只接收指定父页面来源，可以增加 `embedOrigin`：
+To restrict messages to a specific parent origin, add `embedOrigin`:
 
 ```html
-<iframe id="documentEditor" src="http://127.0.0.1:8082/?embed=1&embedOrigin=https://your-system.example.com"></iframe>
+<iframe id=”documentEditor” src=”http://127.0.0.1:8082/?embed=1&embedOrigin=https://your-system.example.com”></iframe>
 ```
 
-### 2. 发送命令
+### 2. Send commands
 
-建议每条命令带上 `id`，便于父页面匹配响应：
+Include an `id` on each command so you can match it to the response:
 
 ```js
 const iframe = document.getElementById('documentEditor');
@@ -122,7 +116,7 @@ function sendEditorCommand(type, payload = {}) {
 }
 ```
 
-监听 iframe 响应：
+Listen for responses:
 
 ```js
 window.addEventListener('message', (event) => {
@@ -131,27 +125,16 @@ window.addEventListener('message', (event) => {
   const { id, type, payload } = event.data || {};
   if (!type || !type.startsWith('document:')) return;
 
-  if (type === 'document:ready') {
-    console.log('编辑器已就绪');
-  }
-
-  if (type === 'document:opened') {
-    console.log('文档已打开', id, payload);
-  }
-
-  if (type === 'document:saved') {
-    console.log('保存完成', payload.fileName, payload.file);
-  }
-
-  if (type === 'document:error') {
-    console.error('编辑器错误', payload.message);
-  }
+  if (type === 'document:ready') console.log('Editor ready');
+  if (type === 'document:opened') console.log('Document opened', id, payload);
+  if (type === 'document:saved') console.log('Saved', payload.fileName, payload.file);
+  if (type === 'document:error') console.error('Error', payload.message);
 });
 ```
 
-### 3. 打开文档
+### 3. Open a document
 
-通过 URL 打开：
+From URL:
 
 ```js
 sendEditorCommand('document:open-url', {
@@ -161,133 +144,96 @@ sendEditorCommand('document:open-url', {
 });
 ```
 
-如果 URL 接口需要授权，可以传 `fetchOptions`，但更推荐由父系统自己 `fetch` 后传入文件对象：
+If the URL requires auth headers, pass `fetchOptions` — though it's preferable to have the parent system fetch the file and pass it as a buffer:
 
 ```js
 sendEditorCommand('document:open-url', {
   url: 'https://example.com/api/files/1',
   fileName: 'demo.xlsx',
-  readonly: false,
-  fetchOptions: {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  },
+  fetchOptions: { headers: { Authorization: `Bearer ${token}` } },
 });
 ```
 
-通过本地文件对话框打开：
+From a local file picker:
 
 ```js
 const input = document.createElement('input');
 input.type = 'file';
 input.accept = '.xlsx,.xls,.csv,.docx,.doc,.pptx,.ppt';
 input.onchange = () => {
-  const file = input.files[0];
-  sendEditorCommand('document:open-file', {
-    file,
-    readonly: false,
-  });
+  sendEditorCommand('document:open-file', { file: input.files[0], readonly: false });
 };
 input.click();
 ```
 
-通过父系统授权请求后打开二进制数据：
+From an authenticated fetch (recommended for protected files):
 
 ```js
 const response = await fetch('/api/files/1', {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
+  headers: { Authorization: `Bearer ${token}` },
 });
-
 const buffer = await response.arrayBuffer();
-
-sendEditorCommand('document:open-buffer', {
-  fileName: 'demo.xlsx',
-  buffer,
-  readonly: false,
-});
+sendEditorCommand('document:open-buffer', { fileName: 'demo.xlsx', buffer, readonly: false });
 ```
 
-### 4. 设置只读
+### 4. Read-only mode
 
-打开文档时可以直接设置：
+Set at open time, or toggle afterwards:
 
 ```js
-sendEditorCommand('document:open-buffer', {
-  fileName: 'demo.xlsx',
-  buffer,
-  readonly: true,
-});
+sendEditorCommand('document:set-readonly', { readonly: true });
 ```
 
-文档打开后也可以切换：
+In read-only mode editing is disabled and `document:save` returns `document:error`.
+
+### 5. Save and upload
+
+The save command exports the current document and returns a `File` via `document:saved`. Default format is `XLSX`; pass `targetExt` to change it (`DOCX`, `PPTX`, `CSV`).
 
 ```js
-sendEditorCommand('document:set-readonly', {
-  readonly: true,
-});
+sendEditorCommand('document:save', { targetExt: 'XLSX' });
 ```
 
-只读模式下编辑权限会关闭，保存命令会返回 `document:error`。
-
-### 5. 保存并上传到服务端
-
-保存命令会触发编辑器导出当前正在编辑的内容，并通过 `document:saved` 返回一个新的 `File` 对象。默认保存为 `XLSX`，也可以传入其他格式，例如 `DOCX`、`PPTX`、`CSV`。
+By default the command waits for the editor to return the edited file — if it times out, `document:error` is returned instead of silently uploading the original. To opt in to returning the original on timeout:
 
 ```js
-sendEditorCommand('document:save', {
-  targetExt: 'XLSX',
-});
+sendEditorCommand('document:save', { targetExt: 'XLSX', returnOriginalOnTimeout: true });
 ```
 
-默认情况下，保存命令必须等到编辑器返回当前编辑后的文件数据；如果超时会返回 `document:error`，避免误把原始文件上传到服务端。如果你的业务确实希望“没有修改时也回传原文件”，可以显式开启：
-
-```js
-sendEditorCommand('document:save', {
-  targetExt: 'XLSX',
-  returnOriginalOnTimeout: true,
-});
-```
-
-父页面拿到文件后自行上传：
+Upload the returned file from the parent:
 
 ```js
 window.addEventListener('message', async (event) => {
   if (event.origin !== editorOrigin) return;
-
   const { type, payload } = event.data || {};
   if (type !== 'document:saved') return;
 
   await fetch('/api/files/1', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
     body: payload.file,
   });
 });
 ```
 
-注意：不要只用 `size` 判断文件是否变化，`xlsx` 是压缩包格式，轻微编辑后文件大小可能刚好不变。建议在调试时对返回的 `File` 计算 hash，项目内置的 `/embed-demo.html` 已经会在保存日志里打印 `sha256`。
+> **Note:** Do not rely on `file.size` alone to detect changes — `.xlsx` files are zip archives and a minor edit may produce the same byte count. The built-in `/embed-demo.html` prints a `sha256` hash in the save log for debugging.
 
-### 6. 支持的消息
+### 6. Message reference
 
-| 方向            | 类型                        | 说明                                       |
-| --------------- | --------------------------- | ------------------------------------------ |
-| 父页面 → iframe | `document:open-url`         | 通过 URL 打开文档                          |
-| 父页面 → iframe | `document:open-file`        | 通过 `File` / `Blob` 打开文档              |
-| 父页面 → iframe | `document:open-buffer`      | 通过 `ArrayBuffer` / `Uint8Array` 打开文档 |
-| 父页面 → iframe | `document:set-readonly`     | 设置只读或可编辑                           |
-| 父页面 → iframe | `document:save`             | 保存并返回 `File`                          |
-| 父页面 → iframe | `document:get-state`        | 获取当前状态                               |
-| iframe → 父页面 | `document:ready`            | iframe 初始化完成                          |
-| iframe → 父页面 | `document:opened`           | 文档打开完成                               |
-| iframe → 父页面 | `document:readonly-changed` | 只读状态已切换                             |
-| iframe → 父页面 | `document:saved`            | 保存完成，返回文件                         |
-| iframe → 父页面 | `document:state`            | 返回当前状态                               |
-| iframe → 父页面 | `document:error`            | 操作失败                                   |
+| Direction       | Type                        | Description                              |
+| --------------- | --------------------------- | ---------------------------------------- |
+| parent → iframe | `document:open-url`         | Open document from URL                   |
+| parent → iframe | `document:open-file`        | Open document from `File` / `Blob`       |
+| parent → iframe | `document:open-buffer`      | Open document from `ArrayBuffer` / `Uint8Array` |
+| parent → iframe | `document:set-readonly`     | Set read-only or editable                |
+| parent → iframe | `document:save`             | Save and return `File`                   |
+| parent → iframe | `document:get-state`        | Query current state                      |
+| iframe → parent | `document:ready`            | Editor initialised                       |
+| iframe → parent | `document:opened`           | Document opened                          |
+| iframe → parent | `document:readonly-changed` | Read-only state changed                  |
+| iframe → parent | `document:saved`            | Save complete, file returned             |
+| iframe → parent | `document:state`            | Current state response                   |
+| iframe → parent | `document:error`            | Operation failed                         |
 
 ## 🛠️ Technical Architecture
 
@@ -347,8 +293,8 @@ services:
 ```bash
 git clone https://github.com/ranuts/document.git
 cd document
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## 🔤 Font Management

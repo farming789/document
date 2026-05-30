@@ -161,6 +161,16 @@ sendEditorCommand('document:open-url', {
 });
 ```
 
+如果 URL 接口需要授权，可以传 `fetchOptions`，但更推荐由父系统自己 `fetch` 后传入文件对象：
+
+```js
+sendEditorCommand('document:open-url', {
+  url: 'https://example.com/api/files/1',
+  fileName: 'demo.xlsx',
+  fetchOptions: { headers: { Authorization: `Bearer ${token}` } },
+});
+```
+
 通过本地文件对话框打开：
 
 ```js
@@ -196,9 +206,21 @@ sendEditorCommand('document:set-readonly', { readonly: true });
 
 ### 5. 保存并上传到服务端
 
+保存命令会触发编辑器导出当前正在编辑的内容，并通过 `document:saved` 返回一个新的 `File` 对象。默认保存为 `XLSX`，也可以传入其他格式，例如 `DOCX`、`PPTX`、`CSV`。
+
 ```js
 sendEditorCommand('document:save', { targetExt: 'XLSX' });
+```
 
+默认情况下，保存命令必须等到编辑器返回当前编辑后的文件数据；如果超时会返回 `document:error`，避免误把原始文件上传到服务端。如果业务确实希望"没有修改时也回传原文件"，可以显式开启：
+
+```js
+sendEditorCommand('document:save', { targetExt: 'XLSX', returnOriginalOnTimeout: true });
+```
+
+父页面拿到文件后自行上传：
+
+```js
 window.addEventListener('message', async (event) => {
   if (event.origin !== editorOrigin) return;
   const { type, payload } = event.data || {};
@@ -210,6 +232,9 @@ window.addEventListener('message', async (event) => {
     body: payload.file,
   });
 });
+```
+
+> **注意：** 不要只用 `size` 判断文件是否变化，`xlsx` 是压缩包格式，轻微编辑后文件大小可能刚好不变。建议在调试时对返回的 `File` 计算 hash，项目内置的 `/embed-demo.html` 已经会在保存日志里打印 `sha256`。
 ```
 
 ### 6. 支持的消息
@@ -287,8 +312,8 @@ services:
 ```bash
 git clone https://github.com/ranuts/document.git
 cd document
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## 🔤 字体管理
