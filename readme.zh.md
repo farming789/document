@@ -79,6 +79,156 @@
 
 📚 **预览组件文档**: [https://chaxus.github.io/ran/src/ranui/preview/](https://chaxus.github.io/ran/src/ranui/preview/)
 
+## 🧩 iframe 嵌入使用方式
+
+本项目支持通过 iframe 嵌入到其他业务系统中。推荐架构是：**父系统负责鉴权、下载文件和上传保存结果；iframe 只负责文档编辑**。这样 token、cookie、业务接口都留在父系统内，编辑器不需要知道业务系统的授权细节。
+
+项目内置了一个示例页面：
+
+```text
+/embed-demo.html
+```
+
+本地启动后可以访问：
+
+```text
+http://127.0.0.1:8082/embed-demo.html
+```
+
+### 1. 嵌入编辑器
+
+```html
+<iframe id="documentEditor" src="http://127.0.0.1:8082/?embed=1" style="width: 100%; height: 720px; border: 0"></iframe>
+```
+
+如果需要限制只接收指定父页面来源，可以增加 `embedOrigin`：
+
+```html
+<iframe id="documentEditor" src="http://127.0.0.1:8082/?embed=1&embedOrigin=https://your-system.example.com"></iframe>
+```
+
+### 2. 发送命令
+
+建议每条命令带上 `id`，便于父页面匹配响应：
+
+```js
+const iframe = document.getElementById('documentEditor');
+const editorOrigin = 'http://127.0.0.1:8082';
+
+function sendEditorCommand(type, payload = {}) {
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  iframe.contentWindow.postMessage({ id, type, payload }, editorOrigin);
+  return id;
+}
+```
+
+监听 iframe 响应：
+
+```js
+window.addEventListener('message', (event) => {
+  if (event.origin !== editorOrigin) return;
+
+  const { id, type, payload } = event.data || {};
+  if (!type || !type.startsWith('document:')) return;
+
+  if (type === 'document:ready') {
+    console.log('编辑器已就绪');
+  }
+
+  if (type === 'document:opened') {
+    console.log('文档已打开', id, payload);
+  }
+
+  if (type === 'document:saved') {
+    console.log('保存完成', payload.fileName, payload.file);
+  }
+
+  if (type === 'document:error') {
+    console.error('编辑器错误', payload.message);
+  }
+});
+```
+
+### 3. 打开文档
+
+通过 URL 打开：
+
+```js
+sendEditorCommand('document:open-url', {
+  url: 'https://example.com/files/demo.xlsx',
+  fileName: 'demo.xlsx',
+  readonly: false,
+});
+```
+
+通过本地文件对话框打开：
+
+```js
+const input = document.createElement('input');
+input.type = 'file';
+input.accept = '.xlsx,.xls,.csv,.docx,.doc,.pptx,.ppt';
+input.onchange = () => {
+  const file = input.files[0];
+  sendEditorCommand('document:open-file', { file, readonly: false });
+};
+input.click();
+```
+
+通过父系统授权请求后传入二进制数据：
+
+```js
+const response = await fetch('/api/files/1', {
+  headers: { Authorization: `Bearer ${token}` },
+});
+const buffer = await response.arrayBuffer();
+sendEditorCommand('document:open-buffer', {
+  fileName: 'demo.xlsx',
+  buffer,
+  readonly: false,
+});
+```
+
+### 4. 设置只读
+
+```js
+sendEditorCommand('document:set-readonly', { readonly: true });
+```
+
+### 5. 保存并上传到服务端
+
+```js
+sendEditorCommand('document:save', { targetExt: 'XLSX' });
+
+window.addEventListener('message', async (event) => {
+  if (event.origin !== editorOrigin) return;
+  const { type, payload } = event.data || {};
+  if (type !== 'document:saved') return;
+
+  await fetch('/api/files/1', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: payload.file,
+  });
+});
+```
+
+### 6. 支持的消息
+
+| 方向 | 类型 | 说明 |
+| --- | --- | --- |
+| 父页面 → iframe | `document:open-url` | 通过 URL 打开文档 |
+| 父页面 → iframe | `document:open-file` | 通过 `File` / `Blob` 打开文档 |
+| 父页面 → iframe | `document:open-buffer` | 通过 `ArrayBuffer` / `Uint8Array` 打开文档 |
+| 父页面 → iframe | `document:set-readonly` | 设置只读或可编辑 |
+| 父页面 → iframe | `document:save` | 保存并返回 `File` |
+| 父页面 → iframe | `document:get-state` | 获取当前状态 |
+| iframe → 父页面 | `document:ready` | iframe 初始化完成 |
+| iframe → 父页面 | `document:opened` | 文档打开完成 |
+| iframe → 父页面 | `document:readonly-changed` | 只读状态已切换 |
+| iframe → 父页面 | `document:saved` | 保存完成，返回文件 |
+| iframe → 父页面 | `document:state` | 返回当前状态 |
+| iframe → 父页面 | `document:error` | 操作失败 |
+
 ## 🛠️ 技术架构
 
 - **OnlyOffice SDK**: 提供强大的文档编辑能力
