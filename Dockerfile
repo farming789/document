@@ -4,11 +4,11 @@ WORKDIR /app
 
 # Enable Corepack and install pnpm (Corepack reads packageManager from package.json)
 RUN corepack enable && \
-    corepack prepare pnpm@10.28.0 --activate && \
+    corepack prepare pnpm@11.4.0 --activate && \
     pnpm --version
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
