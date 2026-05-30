@@ -19,10 +19,7 @@ A working demo is available at `/embed-demo.html` (includes sha256 logging for d
 To restrict messages to a specific origin, add `embedOrigin`:
 
 ```html
-<iframe
-  id="documentEditor"
-  src="https://your-deployment/?embed=1&embedOrigin=https://your-system.example.com"
-></iframe>
+<iframe id="documentEditor" src="https://your-deployment/?embed=1&embedOrigin=https://your-system.example.com"></iframe>
 ```
 
 ---
@@ -47,10 +44,18 @@ window.addEventListener('message', (event) => {
   if (!type?.startsWith('document:')) return;
 
   switch (type) {
-    case 'document:ready':   console.log('Editor ready'); break;
-    case 'document:opened':  console.log('Opened', id, payload); break;
-    case 'document:saved':   console.log('Saved', payload.fileName, payload.file); break;
-    case 'document:error':   console.error('Error', payload.message); break;
+    case 'document:ready':
+      console.log('Editor ready');
+      break;
+    case 'document:opened':
+      console.log('Opened', id, payload);
+      break;
+    case 'document:saved':
+      console.log('Saved', payload.fileName, payload.file);
+      break;
+    case 'document:error':
+      console.error('Error', payload.message);
+      break;
   }
 });
 ```
@@ -160,17 +165,17 @@ sendEditorCommand('document:get-state');
 
 ## Message reference
 
-| Direction       | Type                        | Description                                  |
-| --------------- | --------------------------- | -------------------------------------------- |
-| parent → iframe | `document:open-url`         | Open document from URL                       |
-| parent → iframe | `document:open-file`        | Open document from `File` / `Blob`           |
+| Direction       | Type                        | Description                                     |
+| --------------- | --------------------------- | ----------------------------------------------- |
+| parent → iframe | `document:open-url`         | Open document from URL                          |
+| parent → iframe | `document:open-file`        | Open document from `File` / `Blob`              |
 | parent → iframe | `document:open-buffer`      | Open document from `ArrayBuffer` / `Uint8Array` |
-| parent → iframe | `document:set-readonly`     | Set read-only or editable                    |
-| parent → iframe | `document:save`             | Save and return `File`                       |
-| parent → iframe | `document:get-state`        | Query current state                          |
-| iframe → parent | `document:ready`            | Editor initialised                           |
-| iframe → parent | `document:opened`           | Document opened                              |
-| iframe → parent | `document:readonly-changed` | Read-only state changed                      |
-| iframe → parent | `document:saved`            | Save complete, file returned                 |
-| iframe → parent | `document:state`            | Current state response                       |
-| iframe → parent | `document:error`            | Operation failed                             |
+| parent → iframe | `document:set-readonly`     | Set read-only or editable                       |
+| parent → iframe | `document:save`             | Save and return `File`                          |
+| parent → iframe | `document:get-state`        | Query current state                             |
+| iframe → parent | `document:ready`            | Editor initialised                              |
+| iframe → parent | `document:opened`           | Document opened                                 |
+| iframe → parent | `document:readonly-changed` | Read-only state changed                         |
+| iframe → parent | `document:saved`            | Save complete, file returned                    |
+| iframe → parent | `document:state`            | Current state response                          |
+| iframe → parent | `document:error`            | Operation failed                                |

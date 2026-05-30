@@ -19,10 +19,7 @@
 如需限制只接受指定来源的消息，增加 `embedOrigin`：
 
 ```html
-<iframe
-  id="documentEditor"
-  src="https://your-deployment/?embed=1&embedOrigin=https://your-system.example.com"
-></iframe>
+<iframe id="documentEditor" src="https://your-deployment/?embed=1&embedOrigin=https://your-system.example.com"></iframe>
 ```
 
 ---
@@ -47,10 +44,18 @@ window.addEventListener('message', (event) => {
   if (!type?.startsWith('document:')) return;
 
   switch (type) {
-    case 'document:ready':  console.log('编辑器已就绪'); break;
-    case 'document:opened': console.log('文档已打开', id, payload); break;
-    case 'document:saved':  console.log('保存完成', payload.fileName, payload.file); break;
-    case 'document:error':  console.error('操作失败', payload.message); break;
+    case 'document:ready':
+      console.log('编辑器已就绪');
+      break;
+    case 'document:opened':
+      console.log('文档已打开', id, payload);
+      break;
+    case 'document:saved':
+      console.log('保存完成', payload.fileName, payload.file);
+      break;
+    case 'document:error':
+      console.error('操作失败', payload.message);
+      break;
   }
 });
 ```

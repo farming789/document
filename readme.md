@@ -67,11 +67,11 @@ pnpm run dev
 
 ### URL parameters
 
-| Parameter | Description                              | Priority |
-| --------- | ---------------------------------------- | -------- |
-| `src`     | Open document from URL (recommended)     | Low      |
-| `file`    | Open document from URL (legacy)          | High     |
-| `locale`  | Set interface language (`en`, `zh`)      | —        |
+| Parameter | Description                          | Priority |
+| --------- | ------------------------------------ | -------- |
+| `src`     | Open document from URL (recommended) | Low      |
+| `file`    | Open document from URL (legacy)      | High     |
+| `locale`  | Set interface language (`en`, `zh`)  | —        |
 
 When both `src` and `file` are present, `file` takes priority.
 
@@ -105,13 +105,13 @@ Embed the editor in your application and control it via postMessage. The recomme
 // Open a document
 iframe.contentWindow.postMessage(
   { id: '1', type: 'document:open-url', payload: { url: 'https://example.com/doc.xlsx' } },
-  'https://your-deployment'
+  'https://your-deployment',
 );
 
 // Listen for the result
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'document:opened') console.log('Ready to edit');
-  if (e.data?.type === 'document:saved')  uploadFile(e.data.payload.file);
+  if (e.data?.type === 'document:saved') uploadFile(e.data.payload.file);
 });
 ```
 

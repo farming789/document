@@ -67,11 +67,11 @@ pnpm run dev
 
 ### URL 参数
 
-| 参数      | 说明                              | 优先级 |
-| --------- | --------------------------------- | ------ |
-| `src`     | 从 URL 打开文档（推荐）           | 低     |
-| `file`    | 从 URL 打开文档（向后兼容）       | 高     |
-| `locale`  | 设置界面语言（`en`、`zh`）        | —      |
+| 参数     | 说明                        | 优先级 |
+| -------- | --------------------------- | ------ |
+| `src`    | 从 URL 打开文档（推荐）     | 低     |
+| `file`   | 从 URL 打开文档（向后兼容） | 高     |
+| `locale` | 设置界面语言（`en`、`zh`）  | —      |
 
 同时提供 `src` 和 `file` 时，`file` 优先。
 
@@ -105,13 +105,13 @@ pnpm run dev
 // 打开文档
 iframe.contentWindow.postMessage(
   { id: '1', type: 'document:open-url', payload: { url: 'https://example.com/doc.xlsx' } },
-  'https://your-deployment'
+  'https://your-deployment',
 );
 
 // 监听结果
 window.addEventListener('message', (e) => {
   if (e.data?.type === 'document:opened') console.log('可以开始编辑');
-  if (e.data?.type === 'document:saved')  uploadFile(e.data.payload.file);
+  if (e.data?.type === 'document:saved') uploadFile(e.data.payload.file);
 });
 ```
 

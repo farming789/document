@@ -16,8 +16,8 @@ Font files go in `public/fonts/` and must be named by their numeric index in the
 
 Other Arial variants:
 
-| Variant     | Index | Path              |
-| ----------- | ----- | ----------------- |
+| Variant     | Index | Path               |
+| ----------- | ----- | ------------------ |
 | Regular     | 223   | `public/fonts/223` |
 | Italic      | 224   | `public/fonts/224` |
 | Bold        | 226   | `public/fonts/226` |
