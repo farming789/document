@@ -13,6 +13,7 @@ interface DocEditorConfig {
       edit: boolean;
       chat: boolean;
       protect: boolean;
+      download?: boolean;
     };
   };
   editorConfig: {
@@ -42,6 +43,7 @@ interface DocEditorConfig {
     onAppReady: () => void;
     onDocumentReady: () => void;
     onSave: (event: SaveEvent) => void;
+    onDownloadAs?: (event: DownloadAsEvent) => void;
     writeFile: (event: WriteFileEvent) => void;
     /** Handle external messages from plugins */
     onExternalPluginMessage?: (event: { type: string; data: any; pluginName?: string }) => void;
@@ -70,6 +72,13 @@ interface WriteFileEvent {
   callback?: (result: { success: boolean; error?: string }) => void;
 }
 
+interface DownloadAsEvent {
+  data?: {
+    url?: string;
+    fileType?: string | number;
+  };
+}
+
 interface DocEditor {
   sendCommand: (params: {
     command: string;
@@ -81,8 +90,11 @@ interface DocEditor {
       buf?: ArrayBuffer;
       success?: boolean;
       error?: string;
+      enabled?: boolean;
+      message?: string;
     };
   }) => void;
+  downloadAs?: (data?: string) => void;
   destroyEditor: () => void;
 }
 

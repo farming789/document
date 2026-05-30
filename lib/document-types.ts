@@ -55,8 +55,11 @@ declare global {
           buf?: ArrayBuffer;
           success?: boolean;
           error?: string;
+          enabled?: boolean;
+          message?: string;
         };
       }) => void;
+      downloadAs?: (data?: string) => void;
       destroyEditor: () => void;
     };
   }

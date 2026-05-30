@@ -353,6 +353,16 @@
     'C:\\Windows\\Fonts\\webdings.ttf',
     'C:\\Windows\\Fonts\\wingding.ttf',
   ]),
+  (window.__document_font_base_path = window.location.pathname.startsWith('/document/') ? '/document/' : '/'),
+  (window.__document_font_fallback = function (fontPath) {
+    if (!/^c:\\windows\\fonts\\/i.test(fontPath)) return fontPath;
+
+    const fileName = fontPath.split('\\').pop().toLowerCase();
+    const cjkFontPattern = /^(deng|dengb|dengl|fz|javanese|malgun|mingliu|msgothic|msyh|msyhbd|msyhl|sim|st|yu|yugoth|yumin)/i;
+    const fallbackFile = cjkFontPattern.test(fileName) ? 'NotoSansTC-VF.ttf' : 'LiberationSans-Bold.ttf';
+    return window.__document_font_base_path + 'fonts/' + fallbackFile;
+  }),
+  (window.__fonts_files = window.__fonts_files.map(window.__document_font_fallback)),
   (window.__fonts_infos = [
     ['Agency FB', 1, 0, -1, -1, 0, 0, -1, -1],
     ['Algerian', 2, 0, -1, -1, -1, -1, -1, -1],

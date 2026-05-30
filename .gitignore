@@ -11,3 +11,4 @@ cache
 vite.config.ts.timestamp*
 config.ts.timestamp*
 dist
+public/fonts/__fallback__/

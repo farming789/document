@@ -116,7 +116,14 @@ export const onOpenDocument = (): void => {
   fileInput.click();
 };
 
-export const openDocumentFromUrl = async (url: string, fileName?: string): Promise<void> => {
+export const openDocumentFromUrl = async (
+  url: string,
+  fileName?: string,
+  options?: {
+    readonly?: boolean;
+    fetchOptions?: RequestInit;
+  },
+): Promise<void> => {
   const { removeLoading } = showLoading();
   try {
     if (hideControlPanelFn) {
@@ -126,7 +133,7 @@ export const openDocumentFromUrl = async (url: string, fileName?: string): Promi
     // Fetch the file from URL
     console.log('Fetching document from URL:', url);
     // eslint-disable-next-line n/no-unsupported-features/node-builtins
-    const response = await fetch(url);
+    const response = await fetch(url, options?.fetchOptions);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch document: ${response.status} ${response.statusText}`);
@@ -172,7 +179,12 @@ export const openDocumentFromUrl = async (url: string, fileName?: string): Promi
     // Initialize and open document
     await initX2T();
     const { fileName: docFileName, file: fileBlob } = getDocmentObj();
-    await handleDocumentOperation({ file: fileBlob, fileName: docFileName, isNew: !fileBlob });
+    await handleDocumentOperation({
+      file: fileBlob,
+      fileName: docFileName,
+      isNew: !fileBlob,
+      readonly: options?.readonly,
+    });
 
     // Show menu guide after document is loaded
     if (showMenuGuideFn) {

@@ -299,7 +299,7 @@ export class X2TConverter {
     await this.initialize();
 
     const fileName = file.name;
-    const fileExt = getExtensions(file?.type)[0] || fileName.split('.').pop() || '';
+    const fileExt = fileName.split('.').pop() || getExtensions(file?.type)[0] || '';
     const documentType = this.getDocumentType(fileExt);
 
     try {
@@ -436,9 +436,9 @@ export class X2TConverter {
   }
 
   /**
-   * Convert bin format to specified format and download
+   * Convert bin format to specified document format.
    */
-  async convertBinToDocumentAndDownload(
+  async convertBinToDocument(
     bin: Uint8Array,
     originalFileName: string,
     targetExt = 'DOCX',
@@ -483,9 +483,6 @@ export class X2TConverter {
         csvArray.set(csvBOM, 0);
         csvArray.set(csvTextBytes, csvBOM.length);
 
-        // Save CSV file
-        await this.saveWithFileSystemAPI(csvArray, outputFileName);
-
         return {
           fileName: outputFileName,
           data: csvArray,
@@ -516,13 +513,6 @@ export class X2TConverter {
       // Read generated document
       const result = this.x2tModule!.FS.readFile(`/working/${outputFileName}`);
 
-      // Ensure result is Uint8Array type
-      const resultArray = result instanceof Uint8Array ? result : new Uint8Array(result as ArrayBuffer);
-
-      // Download file
-      // TODO: Improve print functionality
-      await this.saveWithFileSystemAPI(resultArray, outputFileName);
-
       return {
         fileName: outputFileName,
         data: result,
@@ -530,6 +520,22 @@ export class X2TConverter {
     } catch (error) {
       throw new Error(`Bin to document conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Convert bin format to specified format and save it locally.
+   */
+  async convertBinToDocumentAndDownload(
+    bin: Uint8Array,
+    originalFileName: string,
+    targetExt = 'DOCX',
+  ): Promise<BinConversionResult> {
+    const result = await this.convertBinToDocument(bin, originalFileName, targetExt);
+    const data = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data as ArrayBuffer);
+
+    // TODO: Improve print functionality
+    await this.saveWithFileSystemAPI(data, result.fileName);
+    return result;
   }
 
   /**

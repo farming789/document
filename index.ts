@@ -1,4 +1,5 @@
 import { getAllQueryString } from 'ranuts/utils';
+import { initEmbedApi } from './lib/embed-api';
 import { initEvents, setEventUICallbacks } from './lib/events';
 import { onCreateNew, openDocumentFromUrl, setUICallbacks } from './lib/document';
 import {
@@ -25,6 +26,7 @@ declare global {
 
 // Initialize events
 initEvents();
+initEmbedApi();
 
 // Set up UI callbacks to avoid circular dependency
 setUICallbacks({

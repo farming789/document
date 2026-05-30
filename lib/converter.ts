@@ -2,7 +2,7 @@ import { getExtensions } from 'ranuts/utils';
 import { g_sEmpty_bin } from './empty_bin';
 import { t } from './i18n';
 import { X2TConverter } from './document-converter';
-import { createEditorInstance, loadEditorApi, setConverterCallback } from './onlyoffice-editor';
+import { createEditorInstance, loadEditorApi, setConverterCallbacks } from './onlyoffice-editor';
 import { getDocumentType } from './document-utils';
 import type { BinConversionResult, ConversionResult, EmscriptenModule } from './document-types';
 
@@ -28,6 +28,11 @@ const x2tConverter = new X2TConverter();
 export const loadScript = (): Promise<void> => x2tConverter.loadScript();
 export const initX2T = (): Promise<EmscriptenModule> => x2tConverter.initialize();
 export const convertDocument = (file: File): Promise<ConversionResult> => x2tConverter.convertDocument(file);
+export const convertBinToDocument = (
+  bin: Uint8Array,
+  fileName: string,
+  targetExt?: string,
+): Promise<BinConversionResult> => x2tConverter.convertBinToDocument(bin, fileName, targetExt);
 export const convertBinToDocumentAndDownload = (
   bin: Uint8Array,
   fileName: string,
@@ -38,17 +43,21 @@ export const convertBinToDocumentAndDownload = (
 export { createEditorInstance, loadEditorApi };
 
 // Set up converter callback for editor
-setConverterCallback(convertBinToDocumentAndDownload);
+setConverterCallbacks({
+  convert: convertBinToDocument,
+  convertAndDownload: convertBinToDocumentAndDownload,
+});
 
 // Merged file operation method
 export async function handleDocumentOperation(options: {
   isNew: boolean;
   fileName: string;
   file?: File;
+  readonly?: boolean;
 }): Promise<void> {
   try {
-    const { isNew, fileName, file } = options;
-    const fileType = getExtensions(file?.type || '')[0] || fileName.split('.').pop() || '';
+    const { isNew, fileName, file, readonly = false } = options;
+    const fileType = fileName.split('.').pop() || getExtensions(file?.type || '')[0] || '';
     const _docType = getDocumentType(fileType);
 
     // Get document content
@@ -77,6 +86,7 @@ export async function handleDocumentOperation(options: {
       fileType,
       binData: documentData.bin,
       media: documentData.media,
+      readonly,
     });
   } catch (error: any) {
     console.error(`${t('documentOperationFailed')}`, error);

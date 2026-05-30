@@ -22,6 +22,12 @@ h2 {
   font-size: 1.5rem;
 }
 
+body.embed-mode #control-panel-container,
+body.embed-mode #fab-container,
+body.embed-mode #menu-guide {
+  display: none !important;
+}
+
 /* Style for r-button webcomponent using ::part */
 r-button[type='text']::part(ran-btn) {
   font-size: 18px;
