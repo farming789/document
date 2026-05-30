@@ -14,4 +14,8 @@ cache
 vite.config.ts.timestamp*
 config.ts.timestamp*
 dist
+# test artifacts
+coverage/
+playwright-report/
+test-results/
 public/fonts/__fallback__/
