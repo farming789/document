@@ -2,13 +2,67 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在现有 OnlyOffice 本地编辑器中内置 Agent 协同编辑能力。用户无需本地部署，打开浏览器即可完成：文档编辑、Agent 辅助生成、评论协作、修订确认等全流程。LLM 调用直接从浏览器发往外部 API，无中间服务器，符合项目"纯本地、零服务器"定位。
+**Goal:** 在现有 OnlyOffice 本地编辑器中内置 Agent 协同编辑能力。用户无需本地部署，打开浏览器即可完成：文档编辑、Agent 辅助生成、评论协作、修订确认等全流程。所有推理和 API 调用均在浏览器内完成，无中间服务器，符合项目"纯本地、零服务器"定位。
 
-**Architecture:** OnlyOffice Plugin API 作为工具层，pi agent Direct Mode 作为 Agent 编排层，OnlyOffice 修订/评论模式作为人机协作界面，现有 `embed-api.ts` / `onlyoffice-editor.ts` 保持不变作为底层。
+**Architecture:** OnlyOffice Plugin API 作为工具层，WebLLM（离线模式）或 pi agent Direct Mode（云端模式）作为 LLM 推理层，OnlyOffice 修订/评论模式作为人机协作界面，现有 `embed-api.ts` / `onlyoffice-editor.ts` 保持不变作为底层。
 
-**Tech Stack:** OnlyOffice Plugin API (`window.Asc.plugin`), pi agent (`@earendil-works/pi-web-ui`), TypeScript, Vite, localStorage（API Key 管理）。
+**Tech Stack:** OnlyOffice Plugin API (`window.Asc.plugin`), WebLLM (`@mlc-ai/web-llm`), pi agent (`@earendil-works/pi-web-ui`), TypeScript, Vite, WebGPU, Cache API（模型缓存）, localStorage（配置）。
 
 **前置说明：** 整个方案成立的关键前置条件是 **阶段零：验证 Plugin API**。若离线版 OnlyOffice Web Apps 的 Plugin API 不完整，后续阶段需切换到 OnlyOffice Docs Server 方案，工作量会显著增加。
+
+---
+
+## LLM 推理层选型
+
+本方案支持两种推理模式，用户可在设置中切换：
+
+### 模式 A：离线模式（WebLLM）
+
+**完全在浏览器内推理，零网络请求，无需 API Key。**
+
+| 推荐模型 | 量化大小 | Tool calling | 推理速度（典型 GPU） |
+|---|---|---|---|
+| `Phi-3.5-mini-instruct` | ~1.8 GB | ✅ 原生支持 | ~71 tokens/s |
+| `Llama-3.2-3B-Instruct` | ~1.8 GB | ✅ 原生支持 | ~60 tokens/s |
+| `Llama-3.2-1B-Instruct` | ~0.6 GB | ⚠️ 质量较低 | ~120 tokens/s |
+
+- **首次使用**：需下载模型（1.8 GB），之后缓存在浏览器 Cache API / IndexedDB 中，下次秒开
+- **硬件要求**：WebGPU 支持（Chrome 113+、Edge、Firefox 119+、Safari 18+）；独立 GPU 体验最佳，集成 GPU 速度约慢 2–5 倍
+- **隐私**：推理完全本地，无任何数据离开设备
+
+**实现方式：**
+```typescript
+import { CreateMLCEngine } from '@mlc-ai/web-llm';
+
+const engine = await CreateMLCEngine('Phi-3.5-mini-instruct', {
+  initProgressCallback: (progress) => updateLoadingUI(progress),
+});
+
+const response = await engine.chat.completions.create({
+  messages: [{ role: 'user', content: userPrompt }],
+  tools: agentTools,      // 与 OpenAI tool-use 格式兼容
+  tool_choice: 'auto',
+});
+```
+
+### 模式 B：云端模式（pi agent Direct Mode）
+
+**LLM 调用直接从浏览器发往外部 Provider，不经过本项目服务器。**
+
+- 支持 Anthropic Claude、OpenAI、Gemini、Ollama（本地）
+- API Key 存储在 localStorage，不离开用户设备
+- 无需下载模型，响应质量更高（GPT-4 / Claude 级别）
+- 适合对速度和质量要求更高的用户
+
+### 模式选择策略
+
+```
+用户首次访问
+  ├─ WebGPU 可用？
+  │   ├─ 是 → 推荐离线模式，提示"首次需下载 1.8 GB 模型"
+  │   └─ 否 → 自动降级到云端模式，提示输入 API Key
+  └─ 用户可随时在设置中切换
+```
 
 ---
 
@@ -96,16 +150,33 @@ export type AgentTool = {
 
 ### 1.2 LLM 接入层（`llm.ts`）
 
-- [ ] 封装 pi agent Direct Mode 的调用接口，支持以下 Provider：
-  - Anthropic Claude（默认，推荐 `claude-sonnet-4-6`）
-  - OpenAI
-  - Google Gemini
-  - Ollama（本地模型，`baseURL` 指向 `http://localhost:11434`）
+- [ ] 定义统一的 LLM Provider 接口，屏蔽离线/云端差异：
 
-- [ ] API Key 管理：
-  - 存储在 `localStorage`，key 格式：`agent_api_key_{provider}`
+```typescript
+export interface LLMProvider {
+  name: string;
+  chat(messages: Message[], tools: Tool[]): Promise<LLMResponse>;
+  isReady(): boolean;
+}
+```
+
+- [ ] 实现 **WebLLM Provider**（离线模式）：
+  - 使用 `@mlc-ai/web-llm` 的 `CreateMLCEngine`
+  - 检测 WebGPU 可用性（`navigator.gpu`）
+  - 首次加载时显示进度条（`initProgressCallback`）
+  - 模型列表：`Phi-3.5-mini-instruct`（默认）、`Llama-3.2-3B-Instruct`（可选）
+  - Tool calling 格式与 OpenAI 兼容，直接传入 `tools` 数组
+
+- [ ] 实现 **Cloud Provider**（云端模式，基于 pi agent Direct Mode）：
+  - 支持 Anthropic Claude（推荐 `claude-sonnet-4-6`）、OpenAI、Google Gemini、Ollama
+  - API Key 存储在 `localStorage`，key 格式：`agent_api_key_{provider}`
   - 读写封装到 `getApiKey(provider)` / `setApiKey(provider, key)`
   - 不写入 `store/index.ts`（敏感数据不进全局状态）
+
+- [ ] 实现 Provider 选择逻辑：
+  - 自动检测 WebGPU → 默认离线模式
+  - 用户可在设置中强制切换
+  - 当前选择持久化到 `localStorage`
 
 - [ ] 系统 Prompt 模板（支持注入文档上下文）：
 
@@ -222,21 +293,23 @@ export const [getAgentProvider, setAgentProvider] = createSignal<Provider>('anth
 ```
 新增：
   lib/agent-plugin/
-    tools.ts          # 工具定义与执行
-    llm.ts            # LLM Provider 接入
+    tools.ts          # 工具定义与执行（OnlyOffice Plugin API 封装）
+    llm.ts            # LLM Provider 接口 + WebLLM / Cloud 双实现
     runtime.ts        # Agent 运行时（tool-use 循环）
   public/plugins/
     agent-probe/      # 阶段零验证插件
   test/unit/
     agent-tools.test.ts
     agent-runtime.test.ts
+    agent-llm.test.ts # mock WebGPU / fetch，测试 Provider 切换逻辑
 
 修改：
-  lib/ui.ts           # 新增 createAgentPanel()
+  lib/ui.ts           # 新增 createAgentPanel()（含模型加载进度条）
   lib/onlyoffice-editor.ts  # 启用插件加载配置
   store/index.ts      # 新增 Agent 状态信号
   lib/embed-api.ts    # 新增 document:agent-run 消息类型
   index.ts            # 初始化 Agent 面板
+  package.json        # 新增 @mlc-ai/web-llm 依赖
 ```
 
 ---
@@ -246,7 +319,11 @@ export const [getAgentProvider, setAgentProvider] = createSignal<Provider>('anth
 | 风险 | 概率 | 应对 |
 |---|---|---|
 | 离线版 Plugin API 不完整 | 中 | 阶段零提前验证；备选方案：OnlyOffice Docs Server |
-| pi agent 浏览器包依赖 Node.js 专属 API | 中 | 仅使用 `@earendil-works/pi-web-ui` 的 Direct Mode 部分；若不可用，手动实现轻量 tool-use 循环（约 100 行） |
+| WebGPU 在集成 GPU / 低端设备上过慢 | 中 | 自动降级到云端模式；提示用户预期速度（~20 tokens/s） |
+| 模型首次下载体验差（1.8 GB） | 高 | 显示详细进度条 + 预估剩余时间；下载后永久缓存；提供"跳过，使用云端"选项 |
+| Safari 激进存储清理导致模型被驱逐 | 中 | 检测缓存是否有效，失效时提示重新下载；Safari 用户优先推荐云端模式 |
+| WebLLM tool calling 质量不稳定（当前 WIP） | 中 | Phi-3.5-mini / Llama-3.2-3B 均经过验证；兜底方案：解析纯文本输出提取工具调用 |
+| pi agent 浏览器包依赖 Node.js 专属 API | 中 | 仅使用 Direct Mode 部分；若不可用，手动实现轻量 tool-use 循环（约 100 行） |
 | LLM API 跨域限制（CORS） | 低 | Anthropic / OpenAI 均支持浏览器直调；Ollama 本地需用户配置 CORS |
 | 大文档超出 LLM context 窗口 | 中 | `get_document_text` 工具截断到 8000 字；建议用户选区操作 |
 

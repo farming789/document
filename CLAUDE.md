@@ -215,9 +215,24 @@ navigator.modelContext.registerTool({
 
 **后续时机**：待 Chrome 稳定版默认开启、Firefox 表态后再实现。届时新建 `lib/web-mcp.ts`，复用 `embed-api.ts` 现有的处理逻辑即可，改动量很小。
 
-### OnlyOffice Agent 协同编辑 + pi agent 浏览器端移植
+### OnlyOffice Agent 协同编辑（WebLLM 离线 + pi agent 云端）
 
-**结论：方向价值高，但有一个关键前提需要先验证，建议分阶段推进。**
+**结论：方向价值高，与项目定位高度契合，但有一个关键前提需要先验证，建议分阶段推进。**
+
+详细实施计划见 [docs/superpowers/plans/2026-05-30-agent-collab-editor.md](docs/superpowers/plans/2026-05-30-agent-collab-editor.md)。
+
+#### LLM 推理层：WebLLM vs 云端 API
+
+| | WebLLM（离线） | pi agent Direct Mode（云端） |
+|---|---|---|
+| 隐私 | ✅ 完全本地，零数据外发 | ⚠️ 请求发往外部 Provider |
+| API Key | ✅ 不需要 | ❌ 需要用户提供 |
+| 模型质量 | ⚠️ 1–3B 小模型 | ✅ GPT-4 / Claude 级别 |
+| 首次体验 | ⚠️ 下载 ~1.8 GB 模型 | ✅ 即开即用 |
+| 硬件要求 | ⚠️ WebGPU（Chrome/Firefox/Safari 18+） | ✅ 无特殊要求 |
+| 推理速度 | ~40–70 tokens/s（独显） | 取决于 Provider |
+
+**推荐策略**：检测到 WebGPU 时默认推荐离线模式（Phi-3.5-mini 或 Llama-3.2-3B），否则降级到云端模式；用户可在设置中自由切换。两种模式共享同一套工具定义接口，切换对 Agent 层透明。
 
 #### 方案内容
 
