@@ -121,6 +121,29 @@ window.addEventListener('message', (e) => {
 
 ## 🚀 Deployment
 
+This is a pure static app — build once, deploy anywhere.
+
+```bash
+pnpm build   # outputs to dist/
+```
+
+### GitHub Pages
+
+Push to `main` and the included workflow (`.github/workflows/pages-build-site.yml`) builds and deploys automatically. Enable GitHub Pages in your repo settings and set the source to **GitHub Actions**.
+
+### Static hosting (Nginx, Vercel, Netlify, Cloudflare Pages…)
+
+Upload the contents of `dist/` to any static host. No server-side runtime needed.
+
+For Nginx, serve `index.html` as the fallback for all routes:
+
+```nginx
+location / {
+  root /var/www/document;
+  try_files $uri $uri/ /index.html;
+}
+```
+
 ### Docker
 
 ```bash

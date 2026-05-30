@@ -121,6 +121,29 @@ window.addEventListener('message', (e) => {
 
 ## 🚀 部署
 
+这是纯静态应用，构建一次即可部署到任意平台。
+
+```bash
+pnpm build   # 输出到 dist/
+```
+
+### GitHub Pages
+
+推送到 `main` 分支后，内置工作流（`.github/workflows/pages-build-site.yml`）会自动构建并部署。在仓库 Settings → Pages 中将 Source 设置为 **GitHub Actions** 即可。
+
+### 静态托管（Nginx、Vercel、Netlify、Cloudflare Pages 等）
+
+将 `dist/` 目录上传到任意静态托管服务，无需服务端运行时。
+
+Nginx 参考配置（将所有路由回退到 `index.html`）：
+
+```nginx
+location / {
+  root /var/www/document;
+  try_files $uri $uri/ /index.html;
+}
+```
+
 ### Docker
 
 ```bash
