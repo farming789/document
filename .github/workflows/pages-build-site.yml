@@ -2,7 +2,7 @@ name: pages-build-site
 on:
   push:
     branches:
-      - main
+      - release/v0.0.4
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
