@@ -30,14 +30,22 @@ const turnLabel = (role: ChatTurn['role']): string => {
 const PROVIDER_LABEL_KEY: Record<ProviderId, keyof I18nMessages> = {
   anthropic: 'agentProviderClaude',
   openai: 'agentProviderOpenAI',
+  gemini: 'agentProviderGemini',
   webllm: 'agentProviderLocal',
   ollama: 'agentProviderOllama',
 };
-const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'webllm', 'ollama'];
+const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'gemini', 'webllm', 'ollama'];
 
 const OLLAMA_MODEL_STORAGE_KEY = 'agent_ollama_model';
 
-const KEY_PLACEHOLDER: Partial<Record<ProviderId, string>> = { anthropic: 'sk-ant-...', openai: 'sk-...' };
+/** Providers configured with a cloud API key (vs. local WebLLM/Ollama). */
+const CLOUD_PROVIDERS: ReadonlySet<ProviderId> = new Set<ProviderId>(['anthropic', 'openai', 'gemini']);
+
+const KEY_PLACEHOLDER: Partial<Record<ProviderId, string>> = {
+  anthropic: 'sk-ant-...',
+  openai: 'sk-...',
+  gemini: 'AIza...',
+};
 
 /** Build the Agent panel, append it to the body, and return its root element. */
 export function createAgentPanel(): HTMLElement {
@@ -210,7 +218,7 @@ export function createAgentPanel(): HTMLElement {
 
   const syncProviderUi = (): void => {
     const id = currentProvider();
-    const isCloud = id === 'anthropic' || id === 'openai';
+    const isCloud = CLOUD_PROVIDERS.has(id);
     keyInput.style.display = isCloud ? '' : 'none';
     modelRow.style.display = id === 'webllm' ? '' : 'none';
     ollamaModelInput.style.display = id === 'ollama' ? '' : 'none';
@@ -235,7 +243,7 @@ export function createAgentPanel(): HTMLElement {
   });
   keyInput.addEventListener('change', () => {
     const id = currentProvider();
-    if (id === 'anthropic' || id === 'openai') setApiKey(id, keyInput.value.trim());
+    if (CLOUD_PROVIDERS.has(id)) setApiKey(id, keyInput.value.trim());
   });
   syncProviderUi();
 

@@ -20,3 +20,4 @@ export {
 export { AnthropicProvider, type AnthropicProviderOptions } from './anthropic';
 export { OpenAIProvider, type OpenAIProviderOptions } from './openai';
 export { OllamaProvider, type OllamaProviderOptions } from './ollama';
+export { GeminiProvider, type GeminiProviderOptions } from './gemini';

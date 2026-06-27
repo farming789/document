@@ -56,6 +56,7 @@ export interface I18nMessages {
   agentRoleError: string;
   agentProviderClaude: string;
   agentProviderOpenAI: string;
+  agentProviderGemini: string;
   agentProviderLocal: string;
   agentProviderOllama: string;
   agentOllamaModelPlaceholder: string;
@@ -105,6 +106,7 @@ const messages: Record<Language, I18nMessages> = {
     agentRoleError: '错误',
     agentProviderClaude: 'Claude（云端，需 API Key）',
     agentProviderOpenAI: 'OpenAI（云端，需 API Key）',
+    agentProviderGemini: 'Gemini（云端，需 API Key）',
     agentProviderLocal: '本地离线（WebLLM，需 WebGPU）',
     agentProviderOllama: 'Ollama（本地服务，需自行运行）',
     agentOllamaModelPlaceholder: '模型名，如 llama3.2',
@@ -151,6 +153,7 @@ const messages: Record<Language, I18nMessages> = {
     agentRoleError: 'Error',
     agentProviderClaude: 'Claude (cloud, needs API Key)',
     agentProviderOpenAI: 'OpenAI (cloud, needs API Key)',
+    agentProviderGemini: 'Gemini (cloud, needs API Key)',
     agentProviderLocal: 'Local offline (WebLLM, needs WebGPU)',
     agentProviderOllama: 'Ollama (local server, run it yourself)',
     agentOllamaModelPlaceholder: 'Model name, e.g. llama3.2',
