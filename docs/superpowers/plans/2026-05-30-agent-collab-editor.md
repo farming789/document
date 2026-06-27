@@ -361,16 +361,16 @@ export const [getAgentProvider, setAgentProvider] = createSignal<Provider>('anth
 
 ### 已确认可用的 API（agent 工具层直接封装这些）
 
-| 能力 | 方法（`window.editor` 上） |
-| ---- | -------------------------- |
-| 插入文本/HTML | `pluginMethod_PasteHtml` / `pluginMethod_InputText` |
-| 读取选区 | `pluginMethod_GetSelectedText` / `pluginMethod_GetSelectionType` |
-| 智能替换 | `pluginMethod_ReplaceTextSmart` |
-| 评论 | `asc_addComment` / `asc_removeComment` / `asc_changeComment` / `asc_GetCommentsReportByAuthors` |
-| 修订模式 | `asc_SetTrackRevisions` / `asc_IsTrackRevisions` |
+| 能力          | 方法（`window.editor` 上）                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| 插入文本/HTML | `pluginMethod_PasteHtml` / `pluginMethod_InputText`                                                 |
+| 读取选区      | `pluginMethod_GetSelectedText` / `pluginMethod_GetSelectionType`                                    |
+| 智能替换      | `pluginMethod_ReplaceTextSmart`                                                                     |
+| 评论          | `asc_addComment` / `asc_removeComment` / `asc_changeComment` / `asc_GetCommentsReportByAuthors`     |
+| 修订模式      | `asc_SetTrackRevisions` / `asc_IsTrackRevisions`                                                    |
 | 接受/拒绝修订 | `asc_AcceptChanges` / `asc_RejectChanges` / `asc_AcceptAllChanges` / `asc_RejectChangesBySelection` |
-| 导出/转换 | `pluginMethod_ConvertDocument` / `pluginMethod_GetFileToDownload` |
-| 图片 | `pluginMethod_GetImageDataFromSelection` / `pluginMethod_PutImageDataToSelection` |
+| 导出/转换     | `pluginMethod_ConvertDocument` / `pluginMethod_GetFileToDownload`                                   |
+| 图片          | `pluginMethod_GetImageDataFromSelection` / `pluginMethod_PutImageDataToSelection`                   |
 
 ### 对后续阶段的影响（计划修正）
 

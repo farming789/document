@@ -10,13 +10,13 @@
 
 ## 运行时验证（chrome-devtools，v7.5 离线版）
 
-| 机制 | 结论 |
-| ---- | ---- |
-| `pluginMethod_GetSelectedText` / `GetSelectionType` | 同步返回，选区文本用 `\r\n` 分隔 |
-| `pluginMethod_ReplaceTextSmart` | 签名 `(e,o,s)`，`e` 是**字符串数组**（按行）；实测 `ReplaceTextSmart(['x'])` 成功替换全选内容 |
-| `asc_SetTrackRevisions` / `asc_IsTrackRevisions` | set(true)→getter 返回 true，set(false)→false，可用 |
-| `asc_EditSelectAll` | 全选可用（但取全文需全选→破坏光标，非破坏式取全文需 callCommand，未验证） |
-| `asc_addComment(t)` | 收一个 comment 数据对象；构造器**不在** `Asc.asc_CCommentData` / `AscCommon.CCommentData`，位置待查 |
+| 机制                                                | 结论                                                                                                |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `pluginMethod_GetSelectedText` / `GetSelectionType` | 同步返回，选区文本用 `\r\n` 分隔                                                                    |
+| `pluginMethod_ReplaceTextSmart`                     | 签名 `(e,o,s)`，`e` 是**字符串数组**（按行）；实测 `ReplaceTextSmart(['x'])` 成功替换全选内容       |
+| `asc_SetTrackRevisions` / `asc_IsTrackRevisions`    | set(true)→getter 返回 true，set(false)→false，可用                                                  |
+| `asc_EditSelectAll`                                 | 全选可用（但取全文需全选→破坏光标，非破坏式取全文需 callCommand，未验证）                           |
+| `asc_addComment(t)`                                 | 收一个 comment 数据对象；构造器**不在** `Asc.asc_CCommentData` / `AscCommon.CCommentData`，位置待查 |
 
 ## 本次新增工具（全部基于已验证机制）
 

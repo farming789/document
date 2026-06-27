@@ -4,10 +4,10 @@
 
 ## 运行时验证（chrome-devtools，v7.5 离线版）
 
-| 机制 | 结论 |
-| ---- | ---- |
-| 取全文 | 无非破坏式 API：原型上没有 `GetSelectionState`/`SetSelectionState`，`WordControl`/logic document 在 minified 构建里不可达。可行链路：`asc_EditSelectAll()` → `pluginMethod_GetSelectedText()` → `asc_RemoveSelection()`。实测取到 "Alpha line.\nBeta line.\n\n"，清除后选区归 none。**代价：光标位置被重置（不可恢复）。** |
-| 评论构造器 | `Asc.asc_CCommentDataWord`（Word 专用，**不是** `asc_CCommentData`）。`new` 出对象后 setter：`asc_putText` / `asc_putUserName` / `asc_putUserId` / `asc_putTime` 等。实测 `asc_addComment(cd)` 成功，`asc_GetCommentsReportByAuthors()` 返回 `["Agent"]`。 |
+| 机制       | 结论                                                                                                                                                                                                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 取全文     | 无非破坏式 API：原型上没有 `GetSelectionState`/`SetSelectionState`，`WordControl`/logic document 在 minified 构建里不可达。可行链路：`asc_EditSelectAll()` → `pluginMethod_GetSelectedText()` → `asc_RemoveSelection()`。实测取到 "Alpha line.\nBeta line.\n\n"，清除后选区归 none。**代价：光标位置被重置（不可恢复）。** |
+| 评论构造器 | `Asc.asc_CCommentDataWord`（Word 专用，**不是** `asc_CCommentData`）。`new` 出对象后 setter：`asc_putText` / `asc_putUserName` / `asc_putUserId` / `asc_putTime` 等。实测 `asc_addComment(cd)` 成功，`asc_GetCommentsReportByAuthors()` 返回 `["Agent"]`。                                                                 |
 
 ## 实现
 

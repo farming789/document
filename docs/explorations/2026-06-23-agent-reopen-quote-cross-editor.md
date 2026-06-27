@@ -14,11 +14,11 @@
 
 chrome-devtools 实测 Word / Excel / PPT 三种编辑器:
 
-| 编辑器 | `window.editor` | `Asc.editor` | pluginMethod_* / asc_addComment |
-| ------ | --------------- | ------------ | ------------------------------- |
-| Word | ✓ | ✓ | ✓ |
-| **Excel** | ✗ **undefined** | ✓ | ✓ |
-| PPT | ✓ | ✓ | ✓ |
+| 编辑器    | `window.editor` | `Asc.editor` | pluginMethod\_\* / asc_addComment |
+| --------- | --------------- | ------------ | --------------------------------- |
+| Word      | ✓               | ✓            | ✓                                 |
+| **Excel** | ✗ **undefined** | ✓            | ✓                                 |
+| PPT       | ✓               | ✓            | ✓                                 |
 
 **发现真 bug**:Excel（spreadsheet 编辑器）里 `window.editor` 是 undefined,api 只在 `window.Asc.editor` 上。原 `editor-bridge` 只找 `win.editor`,**在 Excel 完全失效**。
 

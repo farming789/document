@@ -13,14 +13,14 @@
 
 实测 cell 编辑器(关键发现见 cross-editor 那篇:Excel 的 api 在 `Asc.editor`,bridge 已修):
 
-| 能力 | 验证结果 |
-| ---- | ---- |
-| 读选区 | `pluginMethod_GetSelectedText` ✓ |
-| 写活动单元格 | `PasteHtml`/`PasteText` ✓(首次焦点未就绪会瞬态读空,实际已写入,截图确认 A1="PasteTextVal") |
-| **按地址定位+写** | `asc_findCell('C3')` + `PasteText` ✓(截图确认 C3="CellC3Value",A1 不受影响) |
-| 读指定单元格 | `asc_findCell` + `asc_getCellInfo().asc_getText()` ✓ |
-| `asc_setCellValue` | ✗ 抛错(需单元格编辑态),不用 |
-| `asc_RemoveSelection` | ✗ Excel 里 undefined(Word 专用) |
+| 能力                  | 验证结果                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| 读选区                | `pluginMethod_GetSelectedText` ✓                                                          |
+| 写活动单元格          | `PasteHtml`/`PasteText` ✓(首次焦点未就绪会瞬态读空,实际已写入,截图确认 A1="PasteTextVal") |
+| **按地址定位+写**     | `asc_findCell('C3')` + `PasteText` ✓(截图确认 C3="CellC3Value",A1 不受影响)               |
+| 读指定单元格          | `asc_findCell` + `asc_getCellInfo().asc_getText()` ✓                                      |
+| `asc_setCellValue`    | ✗ 抛错(需单元格编辑态),不用                                                               |
+| `asc_RemoveSelection` | ✗ Excel 里 undefined(Word 专用)                                                           |
 
 ### 新增工具
 

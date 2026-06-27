@@ -23,11 +23,11 @@ chatStream?(messages, tools, onDelta: (textDelta: string) => void): Promise<LLMR
 
 ## 各 provider 实现
 
-| Provider | 流式 | 方式 |
-| -------- | ---- | ---- |
-| Anthropic | ✅ | SDK `messages.stream()` 的 `.on('text')` + `finalMessage()`，复用 `parseAnthropicResponse`；client 不支持 stream 时回退 `chat()` |
-| WebLLM | ✅ | `create({stream:true})` 返回 OpenAI 格式异步块，新 `accumulateOpenAIStream` 折叠回 completion 再走 `parseOpenAIResponse` |
-| OpenAI / Ollama | ⏳ 回退 | 裸 fetch 的 SSE 字节解析较脆，本轮走非流式；后续复用 `accumulateOpenAIStream` + 一个 SSE reader 即可补上(架构已就绪) |
+| Provider        | 流式    | 方式                                                                                                                             |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Anthropic       | ✅      | SDK `messages.stream()` 的 `.on('text')` + `finalMessage()`，复用 `parseAnthropicResponse`；client 不支持 stream 时回退 `chat()` |
+| WebLLM          | ✅      | `create({stream:true})` 返回 OpenAI 格式异步块，新 `accumulateOpenAIStream` 折叠回 completion 再走 `parseOpenAIResponse`         |
+| OpenAI / Ollama | ⏳ 回退 | 裸 fetch 的 SSE 字节解析较脆，本轮走非流式；后续复用 `accumulateOpenAIStream` + 一个 SSE reader 即可补上(架构已就绪)             |
 
 **两个默认 provider(云端 Anthropic、离线 WebLLM)都已流式。**
 

@@ -15,6 +15,7 @@
 ### 本地模型选择
 
 `llm/webllm.ts`:
+
 - `WEBLLM_MODELS` 精选列表（Llama-3.2-1B 最快 / Qwen2.5-1.5B 轻量 / Phi-3.5-mini 均衡推荐 / Llama-3.2-3B 更强）+ `DEFAULT_WEBLLM_MODEL`
 - `preload()` 方法:单独下载/加载模型,不阻塞首条消息
 - 暴露 `model` 字段
@@ -26,6 +27,7 @@
 ### 面板
 
 provider 选择器三选一:
+
 - **Claude / OpenAI（云端）**:显示 key 输入,按 provider 切换占位符（`sk-ant-...` / `sk-...`）和读写对应 key
 - **本地离线（WebLLM）**:显示模型下拉 + 「加载模型」按钮（调 `preload()`,进度写入提示）+ 下载说明
 
@@ -37,10 +39,10 @@ provider 选择器三选一:
 
 ## 现状
 
-| 模式 | 需要 | 说明 |
-| ---- | ---- | ---- |
-| Claude 云端 | Claude API Key | `claude-opus-4-8`,官方 SDK |
-| OpenAI 云端 | OpenAI API Key | `gpt-4o-mini`,fetch 直调 |
-| 本地离线 | WebGPU（无需 key） | 4 个性价比模型可选,可预加载 |
+| 模式        | 需要               | 说明                        |
+| ----------- | ------------------ | --------------------------- |
+| Claude 云端 | Claude API Key     | `claude-opus-4-8`,官方 SDK  |
+| OpenAI 云端 | OpenAI API Key     | `gpt-4o-mini`,fetch 直调    |
+| 本地离线    | WebGPU（无需 key） | 4 个性价比模型可选,可预加载 |
 
 三种模式同一 `LLMProvider` 接口、同一运行时、同一工具集,面板自由切换。无 key 也能用本地模型。
