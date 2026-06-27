@@ -23,6 +23,7 @@ export interface AgentChatControllerOptions {
 export class AgentChatController {
   private history: LLMMessage[] = [];
   private running = false;
+  private abortController: AbortController | null = null;
 
   constructor(
     private readonly provider: LLMProvider,
@@ -41,12 +42,14 @@ export class AgentChatController {
     if (!text || this.running) return;
 
     this.running = true;
+    this.abortController = new AbortController();
     this.onTurn({ role: 'user', text });
     try {
       const result = await runAgent(this.provider, text, {
         tools: this.options.tools,
         maxIterations: this.options.maxIterations,
         history: this.history,
+        signal: this.abortController.signal,
         onEvent: (event) => {
           if (event.type === 'tool_call') {
             this.onTurn({ role: 'tool', text: `调用工具：${event.name}` });
@@ -58,14 +61,22 @@ export class AgentChatController {
         },
       });
       this.history = result.messages;
-      if (result.stoppedOnLimit) {
+      if (result.aborted) {
+        this.onTurn({ role: 'error', text: '已停止。' });
+      } else if (result.stoppedOnLimit) {
         this.onTurn({ role: 'error', text: '已达到最大执行步数，已停止。' });
       }
     } catch (error) {
       this.onTurn({ role: 'error', text: error instanceof Error ? error.message : String(error) });
     } finally {
       this.running = false;
+      this.abortController = null;
     }
+  }
+
+  /** Request the current run to stop after the in-flight model call returns. */
+  stop(): void {
+    this.abortController?.abort();
   }
 
   /** Clear the conversation history. */

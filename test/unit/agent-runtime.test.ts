@@ -122,6 +122,15 @@ describe('runAgent', () => {
     expect(result.toolCallCount).toBe(3);
   });
 
+  it('returns aborted without calling chat when the signal is already aborted', async () => {
+    const { provider, chat } = scripted([textResponse('x')]);
+    const ac = new AbortController();
+    ac.abort();
+    const result = await runAgent(provider, 'go', { tools: {}, signal: ac.signal });
+    expect(result.aborted).toBe(true);
+    expect(chat).not.toHaveBeenCalled();
+  });
+
   it('prepends prior history before the new user message', async () => {
     const { provider, snapshots } = scripted([textResponse('ok')]);
     const history: LLMMessage[] = [

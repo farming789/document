@@ -29,10 +29,12 @@ export interface AgentRunOptions {
   history?: LLMMessage[];
   /** Progress callback. */
   onEvent?: (event: AgentEvent) => void;
+  /** Abort the loop between iterations (the in-flight chat still finishes). */
+  signal?: AbortSignal;
 }
 
 export interface AgentRunResult {
-  /** The final assistant text (empty if it stopped on the iteration cap). */
+  /** The final assistant text (empty if it stopped on the iteration cap/abort). */
   text: string;
   /** Full message history, including tool calls and results. */
   messages: LLMMessage[];
@@ -40,6 +42,8 @@ export interface AgentRunResult {
   toolCallCount: number;
   /** True if the run stopped because it hit `maxIterations`. */
   stoppedOnLimit: boolean;
+  /** True if the run was aborted via `options.signal`. */
+  aborted: boolean;
 }
 
 /** Convert an AgentTool registry into the LLM-facing tool definitions. */
@@ -65,12 +69,15 @@ export async function runAgent(
   let toolCallCount = 0;
 
   for (let iteration = 0; iteration < maxIterations; iteration++) {
+    if (options.signal?.aborted) {
+      return { text: '', messages, toolCallCount, stoppedOnLimit: false, aborted: true };
+    }
     const response = await provider.chat(messages, toolDefs);
     messages.push(response.assistant);
     if (response.text) options.onEvent?.({ type: 'assistant', text: response.text });
 
     if (response.toolCalls.length === 0) {
-      return { text: response.text, messages, toolCallCount, stoppedOnLimit: false };
+      return { text: response.text, messages, toolCallCount, stoppedOnLimit: false, aborted: false };
     }
 
     const results: LLMContent[] = [];
@@ -84,7 +91,7 @@ export async function runAgent(
     messages.push({ role: 'user', content: results });
   }
 
-  return { text: '', messages, toolCallCount, stoppedOnLimit: true };
+  return { text: '', messages, toolCallCount, stoppedOnLimit: true, aborted: false };
 }
 
 async function executeToolCall(

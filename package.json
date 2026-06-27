@@ -67,6 +67,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
     "@khmyznikov/pwa-install": "^0.6.3",
+    "@mlc-ai/web-llm": "^0.2.84",
     "ranui": "0.1.10-alpha-27",
     "ranuts": "0.1.0-alpha-23"
   }

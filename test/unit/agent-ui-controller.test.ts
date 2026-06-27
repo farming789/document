@@ -132,6 +132,31 @@ describe('AgentChatController', () => {
     expect(secondCallMessages[secondCallMessages.length - 1]).toEqual({ role: 'user', content: 'two' });
   });
 
+  it('stop() aborts the run and emits a stopped turn', async () => {
+    let resolveChat: () => void = () => {};
+    const provider: LLMProvider = {
+      name: 'test',
+      isReady: () => true,
+      chat: vi.fn(
+        () =>
+          new Promise<LLMResponse>((resolve) => {
+            resolveChat = () => resolve(toolResponse('t1', 'loop', {}));
+          }),
+      ),
+    };
+    const tools = { loop: makeTool('loop', async () => ({})) };
+    const { controller, turns } = collect(provider, { tools });
+
+    const pending = controller.send('go');
+    await Promise.resolve(); // let send() reach the awaited chat()
+    controller.stop();
+    resolveChat(); // first chat returns a tool call; next iteration sees the abort
+    await pending;
+
+    expect(turns).toContainEqual({ role: 'error', text: '已停止。' });
+    expect(controller.isRunning()).toBe(false);
+  });
+
   it('reset clears history', async () => {
     const { provider, snapshots } = scriptedWithSnapshots([textResponse('first'), textResponse('second')]);
     const { controller } = collect(provider, { tools: {} });
