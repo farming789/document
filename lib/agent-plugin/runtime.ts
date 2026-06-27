@@ -1,0 +1,105 @@
+/**
+ * Agent runtime — the tool-use loop that ties the tool layer (tools.ts) to an
+ * LLM provider (llm/).
+ *
+ * Flow: send the user message → provider.chat() → if the model requested tools,
+ * execute each one and feed the results back → chat again → repeat until the
+ * model stops calling tools (a normal text turn) or the iteration cap is hit.
+ *
+ * The runtime is provider-agnostic and editor-agnostic: it only knows the
+ * LLMProvider interface and the AgentTool registry, so it is fully unit-testable
+ * with a scripted provider and mock tools.
+ */
+import { agentTools as defaultTools } from './tools';
+import type { AgentTool } from './types';
+import type { LLMContent, LLMMessage, LLMProvider, LLMToolDef } from './llm/types';
+
+/** Progress event emitted during a run (for UI: chat bubbles, tool activity). */
+export type AgentEvent =
+  | { type: 'assistant'; text: string }
+  | { type: 'tool_call'; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; name: string; content: string; isError: boolean };
+
+export interface AgentRunOptions {
+  /** Tool registry to expose (defaults to all registered agent tools). */
+  tools?: Record<string, AgentTool>;
+  /** Maximum chat↔tool round trips before giving up (default 8). */
+  maxIterations?: number;
+  /** Prior conversation to continue. */
+  history?: LLMMessage[];
+  /** Progress callback. */
+  onEvent?: (event: AgentEvent) => void;
+}
+
+export interface AgentRunResult {
+  /** The final assistant text (empty if it stopped on the iteration cap). */
+  text: string;
+  /** Full message history, including tool calls and results. */
+  messages: LLMMessage[];
+  /** How many tool calls were executed across the run. */
+  toolCallCount: number;
+  /** True if the run stopped because it hit `maxIterations`. */
+  stoppedOnLimit: boolean;
+}
+
+/** Convert an AgentTool registry into the LLM-facing tool definitions. */
+export function toLLMToolDefs(tools: Record<string, AgentTool>): LLMToolDef[] {
+  return Object.values(tools).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+/** Run the agent loop for one user message. */
+export async function runAgent(
+  provider: LLMProvider,
+  userMessage: string,
+  options: AgentRunOptions = {},
+): Promise<AgentRunResult> {
+  const tools = options.tools ?? defaultTools;
+  const maxIterations = options.maxIterations ?? 8;
+  const toolDefs = toLLMToolDefs(tools);
+
+  const messages: LLMMessage[] = [...(options.history ?? []), { role: 'user', content: userMessage }];
+  let toolCallCount = 0;
+
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const response = await provider.chat(messages, toolDefs);
+    messages.push(response.assistant);
+    if (response.text) options.onEvent?.({ type: 'assistant', text: response.text });
+
+    if (response.toolCalls.length === 0) {
+      return { text: response.text, messages, toolCallCount, stoppedOnLimit: false };
+    }
+
+    const results: LLMContent[] = [];
+    for (const call of response.toolCalls) {
+      toolCallCount++;
+      options.onEvent?.({ type: 'tool_call', name: call.name, input: call.input });
+      const { content, isError } = await executeToolCall(tools, call.name, call.input);
+      options.onEvent?.({ type: 'tool_result', name: call.name, content, isError });
+      results.push({ type: 'tool_result', toolUseId: call.id, content, isError });
+    }
+    messages.push({ role: 'user', content: results });
+  }
+
+  return { text: '', messages, toolCallCount, stoppedOnLimit: true };
+}
+
+async function executeToolCall(
+  tools: Record<string, AgentTool>,
+  name: string,
+  input: Record<string, unknown>,
+): Promise<{ content: string; isError: boolean }> {
+  const tool = tools[name];
+  if (!tool) {
+    return { content: `Unknown tool: ${name}`, isError: true };
+  }
+  try {
+    const output = await tool.execute(input);
+    return { content: JSON.stringify(output ?? null), isError: false };
+  } catch (error) {
+    return { content: error instanceof Error ? error.message : String(error), isError: true };
+  }
+}
