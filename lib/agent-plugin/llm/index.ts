@@ -1,0 +1,22 @@
+/**
+ * LLM provider layer — public API.
+ *
+ * Editor-agnostic and provider-agnostic: neutral message/tool/response shapes
+ * ({@link LLMProvider}) with concrete providers behind a factory. This layer has
+ * zero dependency on the OnlyOffice editor, so it can be reused on its own.
+ */
+export type { LLMContent, LLMMessage, LLMProvider, LLMResponse, LLMToolCall, LLMToolDef } from './types';
+export { createProvider, defaultProviderId, type ProviderId, type ProviderOptions } from './factory';
+export { getApiKey, setApiKey } from './keys';
+export { DEFAULT_SYSTEM_PROMPT } from './prompt';
+export {
+  DEFAULT_WEBLLM_MODEL,
+  isModelCached,
+  isWebGPUAvailable,
+  WEBLLM_MODELS,
+  WebLLMProvider,
+  type WebLLMProviderOptions,
+} from './webllm';
+export { AnthropicProvider, type AnthropicProviderOptions } from './anthropic';
+export { OpenAIProvider, type OpenAIProviderOptions } from './openai';
+export { OllamaProvider, type OllamaProviderOptions } from './ollama';

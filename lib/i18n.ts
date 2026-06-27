@@ -57,6 +57,9 @@ export interface I18nMessages {
   agentProviderClaude: string;
   agentProviderOpenAI: string;
   agentProviderLocal: string;
+  agentProviderOllama: string;
+  agentOllamaModelPlaceholder: string;
+  agentOllamaHint: string;
   agentLoadModel: string;
   agentModelLoaded: string;
   agentCheckingCache: string;
@@ -103,6 +106,9 @@ const messages: Record<Language, I18nMessages> = {
     agentProviderClaude: 'Claude（云端，需 API Key）',
     agentProviderOpenAI: 'OpenAI（云端，需 API Key）',
     agentProviderLocal: '本地离线（WebLLM，需 WebGPU）',
+    agentProviderOllama: 'Ollama（本地服务，需自行运行）',
+    agentOllamaModelPlaceholder: '模型名，如 llama3.2',
+    agentOllamaHint: '连接本地 Ollama（http://localhost:11434），无需 API Key，请确保已运行对应模型。',
     agentLoadModel: '加载模型',
     agentModelLoaded: '模型已加载，可以开始对话。',
     agentCheckingCache: '检查模型缓存…',
@@ -146,6 +152,9 @@ const messages: Record<Language, I18nMessages> = {
     agentProviderClaude: 'Claude (cloud, needs API Key)',
     agentProviderOpenAI: 'OpenAI (cloud, needs API Key)',
     agentProviderLocal: 'Local offline (WebLLM, needs WebGPU)',
+    agentProviderOllama: 'Ollama (local server, run it yourself)',
+    agentOllamaModelPlaceholder: 'Model name, e.g. llama3.2',
+    agentOllamaHint: 'Connects to local Ollama (http://localhost:11434); no API Key — make sure the model is running.',
     agentLoadModel: 'Load model',
     agentModelLoaded: 'Model loaded — you can start chatting.',
     agentCheckingCache: 'Checking model cache…',

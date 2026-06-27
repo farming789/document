@@ -8,6 +8,7 @@
  * orchestration lives in the controller and the LLM factory; this file only
  * builds DOM and forwards events. Loaded behind `?agent=1`.
  */
+import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
 import { type I18nMessages, t } from '../../i18n';
 import { getEditorApi } from '../editor-bridge';
 import { createProvider, defaultProviderId, type ProviderId } from '../llm/factory';
@@ -30,8 +31,11 @@ const PROVIDER_LABEL_KEY: Record<ProviderId, keyof I18nMessages> = {
   anthropic: 'agentProviderClaude',
   openai: 'agentProviderOpenAI',
   webllm: 'agentProviderLocal',
+  ollama: 'agentProviderOllama',
 };
-const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'webllm'];
+const PROVIDER_IDS: ProviderId[] = ['anthropic', 'openai', 'webllm', 'ollama'];
+
+const OLLAMA_MODEL_STORAGE_KEY = 'agent_ollama_model';
 
 const KEY_PLACEHOLDER: Partial<Record<ProviderId, string>> = { anthropic: 'sk-ant-...', openai: 'sk-...' };
 
@@ -84,6 +88,16 @@ export function createAgentPanel(): HTMLElement {
   keyInput.className = 'agent-panel-key-input';
   keyInput.type = 'password';
 
+  // Ollama: local model name input (no key needed)
+  const ollamaModelInput = document.createElement('input');
+  ollamaModelInput.className = 'agent-panel-ollama-model';
+  ollamaModelInput.type = 'text';
+  ollamaModelInput.value = localStorageGetItem(OLLAMA_MODEL_STORAGE_KEY) || '';
+  ollamaModelInput.addEventListener('change', () => {
+    controller = null; // different model → rebuild
+    localStorageSetItem(OLLAMA_MODEL_STORAGE_KEY, ollamaModelInput.value.trim());
+  });
+
   // Local: model picker + load button
   const modelRow = document.createElement('div');
   modelRow.className = 'agent-panel-model-row';
@@ -105,7 +119,7 @@ export function createAgentPanel(): HTMLElement {
   const note = document.createElement('div');
   note.className = 'agent-panel-note';
 
-  settings.append(providerSelect, keyInput, modelRow, note);
+  settings.append(providerSelect, keyInput, ollamaModelInput, modelRow, note);
 
   // ── Toolbar ─────────────────────────────────────────────────────────────
   const toolbar = document.createElement('div');
@@ -185,10 +199,14 @@ export function createAgentPanel(): HTMLElement {
     const isCloud = id === 'anthropic' || id === 'openai';
     keyInput.style.display = isCloud ? '' : 'none';
     modelRow.style.display = id === 'webllm' ? '' : 'none';
+    ollamaModelInput.style.display = id === 'ollama' ? '' : 'none';
     if (isCloud) {
       keyInput.placeholder = KEY_PLACEHOLDER[id] ?? '';
       keyInput.value = getApiKey(id) ?? '';
       note.textContent = '';
+    } else if (id === 'ollama') {
+      ollamaModelInput.placeholder = t('agentOllamaModelPlaceholder');
+      note.textContent = t('agentOllamaHint');
     } else {
       void updateLocalHint();
     }
@@ -219,6 +237,16 @@ export function createAgentPanel(): HTMLElement {
         });
         controller = new AgentChatController(webllmProvider, appendTurn);
         controllerKind = kind;
+      }
+      return controller;
+    }
+    if (id === 'ollama') {
+      const model = ollamaModelInput.value.trim() || undefined;
+      const kind = `ollama:${model ?? ''}`;
+      if (!controller || controllerKind !== kind) {
+        controller = new AgentChatController(createProvider('ollama', { ollamaModel: model }), appendTurn);
+        controllerKind = kind;
+        webllmProvider = null;
       }
       return controller;
     }

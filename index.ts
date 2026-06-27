@@ -67,7 +67,7 @@ const documentUrl = file || src;
 const isReadonly = parseReadonly(readonly);
 // Experimental AI agent panel: opt-in via ?agent=1 (also ?agent=true or bare ?agent).
 if (agent === '1' || agent === 'true' || agent === '') {
-  void import('./lib/agent-plugin/ui/panel').then(({ createAgentPanel }) => createAgentPanel());
+  void import('./lib/agent-plugin').then(({ createAgentPanel }) => createAgentPanel());
 }
 if (documentUrl) {
   // Decode URL if it's encoded
