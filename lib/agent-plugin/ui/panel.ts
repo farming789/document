@@ -15,6 +15,7 @@ import { createProvider, defaultProviderId, type ProviderId } from '../llm/facto
 import { getApiKey, setApiKey } from '../llm/keys';
 import { DEFAULT_WEBLLM_MODEL, isModelCached, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '../llm/webllm';
 import { AgentChatController, type ChatTurn } from './controller';
+import { createHistoryStorage, historyToTurns } from './storage';
 
 const TURN_LABEL_KEY: Record<ChatTurn['role'], keyof I18nMessages | null> = {
   user: 'agentRoleUser',
@@ -167,6 +168,9 @@ export function createAgentPanel(): HTMLElement {
     return body;
   };
 
+  // Persist the conversation so a reload keeps it (model context + display).
+  const historyStorage = createHistoryStorage();
+
   // Streaming: append deltas into a single live agent bubble until the turn ends.
   let liveBubble: HTMLElement | null = null;
   const controllerOptions = {
@@ -178,7 +182,11 @@ export function createAgentPanel(): HTMLElement {
     onAgentStreamEnd: (): void => {
       liveBubble = null;
     },
+    storage: historyStorage,
   };
+
+  // Restore a previous conversation into the view on load.
+  for (const turn of historyToTurns(historyStorage.load())) appendTurn(turn);
 
   // ── Input ───────────────────────────────────────────────────────────────
   const inputRow = document.createElement('div');
@@ -345,6 +353,7 @@ export function createAgentPanel(): HTMLElement {
   });
   clearBtn.addEventListener('click', () => {
     controller?.reset();
+    historyStorage.clear(); // also clear when no controller has been built yet
     conversation.replaceChildren();
     liveBubble = null;
   });

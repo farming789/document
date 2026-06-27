@@ -8,6 +8,7 @@
  */
 import { t } from '../../i18n';
 import { runAgent } from '../runtime';
+import type { HistoryStorage } from './storage';
 import type { AgentTool } from '../types';
 import type { LLMMessage, LLMProvider } from '../llm/types';
 
@@ -23,6 +24,8 @@ export interface AgentChatControllerOptions {
   onAgentDelta?: (delta: string) => void;
   /** Called when a streamed assistant turn completes (close the live bubble). */
   onAgentStreamEnd?: () => void;
+  /** Persist/restore conversation history across reloads. */
+  storage?: HistoryStorage;
 }
 
 export class AgentChatController {
@@ -34,7 +37,11 @@ export class AgentChatController {
     private readonly provider: LLMProvider,
     private readonly onTurn: (turn: ChatTurn) => void,
     private readonly options: AgentChatControllerOptions = {},
-  ) {}
+  ) {
+    // Restore prior conversation so a rebuilt controller (provider switch) or a
+    // page reload continues with the model's full context.
+    this.history = options.storage?.load() ?? [];
+  }
 
   /** Whether a run is currently in progress (input should be disabled). */
   isRunning(): boolean {
@@ -75,6 +82,7 @@ export class AgentChatController {
         },
       });
       this.history = result.messages;
+      this.options.storage?.save(this.history);
       if (result.aborted) {
         this.onTurn({ role: 'error', text: t('agentStopped') });
       } else if (result.stoppedOnLimit) {
@@ -93,8 +101,9 @@ export class AgentChatController {
     this.abortController?.abort();
   }
 
-  /** Clear the conversation history. */
+  /** Clear the conversation history (and its persisted copy). */
   reset(): void {
     this.history = [];
+    this.options.storage?.clear();
   }
 }

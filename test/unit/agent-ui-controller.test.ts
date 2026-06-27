@@ -209,4 +209,42 @@ describe('AgentChatController', () => {
     await controller.send('two');
     expect(snapshots[1]).toEqual([{ role: 'user', content: 'two' }]);
   });
+
+  it('persists history to storage after a send and clears it on reset', async () => {
+    let saved: LLMMessage[] | null = [];
+    const storage = {
+      load: () => saved ?? [],
+      save: (m: LLMMessage[]) => {
+        saved = m;
+      },
+      clear: () => {
+        saved = [];
+      },
+    };
+    const turns: ChatTurn[] = [];
+    const controller = new AgentChatController(scripted([textResponse('hi')]), (t) => turns.push(t), {
+      tools: {},
+      storage,
+    });
+    await controller.send('hello');
+    expect(saved).toEqual([
+      { role: 'user', content: 'hello' },
+      { role: 'assistant', content: [{ type: 'text', text: 'hi' }] },
+    ]);
+    controller.reset();
+    expect(saved).toEqual([]);
+  });
+
+  it('restores prior history from storage on construction', async () => {
+    const prior: LLMMessage[] = [
+      { role: 'user', content: 'earlier' },
+      { role: 'assistant', content: [{ type: 'text', text: 'sure' }] },
+    ];
+    const storage = { load: () => prior, save: () => {}, clear: () => {} };
+    const { provider, snapshots } = scriptedWithSnapshots([textResponse('ok')]);
+    const controller = new AgentChatController(provider, () => {}, { tools: {}, storage });
+    await controller.send('next');
+    // The restored history precedes the new user message in what the model sees.
+    expect(snapshots[0]).toEqual([...prior, { role: 'user', content: 'next' }]);
+  });
 });
