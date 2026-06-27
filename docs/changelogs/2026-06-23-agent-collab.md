@@ -12,11 +12,11 @@
 
 ### 三种推理后端（同一接口可切换）
 
-| 模式 | 需要 | 默认模型 |
-| ---- | ---- | ---- |
+| 模式        | 需要                              | 默认模型                                  |
+| ----------- | --------------------------------- | ----------------------------------------- |
 | Claude 云端 | Claude API Key（存 localStorage） | `claude-opus-4-8`（官方 SDK，浏览器直调） |
-| OpenAI 云端 | OpenAI API Key（存 localStorage） | `gpt-4o-mini`（fetch 直调） |
-| 本地离线 | WebGPU，**无需 Key** | 4 个性价比模型可选，Phi-3.5-mini 默认 |
+| OpenAI 云端 | OpenAI API Key（存 localStorage） | `gpt-4o-mini`（fetch 直调）               |
+| 本地离线    | WebGPU，**无需 Key**              | 4 个性价比模型可选，Phi-3.5-mini 默认     |
 
 - 本地模型可选：Llama-3.2-1B（最快）/ Qwen2.5-1.5B（轻量）/ Phi-3.5-mini（均衡，推荐）/ Llama-3.2-3B（更强）。
 - 「加载模型」按钮预下载；模型权重持久缓存于浏览器，**刷新页面不再重新下载**，面板按缓存状态给出对应提示。
