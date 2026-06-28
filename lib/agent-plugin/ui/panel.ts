@@ -180,14 +180,13 @@ export function createAgentPanel(): HTMLElement {
     .children(providerSelect, keyInput, ollamaModelInput, modelRow)
     .build();
 
-  // ── Toolbar ─────────────────────────────────────────────────────────────
+  // ── Compose actions (mounted into ChatView's slot above the input) ────────
   const reviewCheck = View('r-checkbox').build();
   const reviewText = Span().text(t('agentReviewMode')).build();
   const reviewLabel = Label().class('agent-panel-review').children(reviewCheck, reviewText).build();
   const quoteBtn = ranButton(t('agentQuote'), 'agent-panel-quote');
   quoteBtn.title = t('agentQuoteTip');
   const clearBtn = ranButton(t('agentClear'), 'agent-panel-clear');
-  const toolbar = Div().class('agent-panel-toolbar').children(reviewLabel, quoteBtn, clearBtn).build();
 
   // ── Conversation + input (reusable chat UI) ──────────────────────────────
   // The message list, streaming, and input box are the framework-free
@@ -207,6 +206,8 @@ export function createAgentPanel(): HTMLElement {
   const appendTurn = (turn: ChatTurn): void => {
     chat.append(turn);
   };
+  // IM-style compose toolbar: review/quote/clear sit just above the input.
+  chat.actionsEl.append(reviewLabel, quoteBtn, clearBtn);
 
   // Persist the conversation so a reload keeps it (model context + display).
   const historyStorage = createHistoryStorage();
@@ -415,7 +416,7 @@ export function createAgentPanel(): HTMLElement {
     syncProviderUi(); // refresh key placeholder / model hint in the new language
   });
 
-  panel.append(header, settings, toolbar, note, chat.el);
+  panel.append(header, settings, note, chat.el);
   document.body.append(panel, launcher);
   setOpen(true); // start open + docked
 

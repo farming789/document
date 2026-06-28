@@ -356,16 +356,8 @@ body.agent-docked #app iframe {
 .agent-panel-note:empty {
   display: none;
 }
-.agent-panel-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 13px;
-}
+/* (Review / quote / clear moved into ChatView's `.cui-actions` slot above the
+   input; the old top toolbar is gone.) */
 
 /* ranui renders select dropdowns as a body-level <r-dropdown> portal at z-index
    10, which the agent panel (z-index 10000) would otherwise cover — lift it. */

@@ -46,3 +46,4 @@ Override the look via the `--cui-*` custom properties on `.cui-root`.
 - `clear()` — remove all messages.
 - `getInput()` / `setInput(text)` / `focus()` — input helpers.
 - `setLabels(labels)` — update labels live (e.g. language change).
+- `actionsEl` — host-populated slot above the input (compose toolbar); collapses when empty.

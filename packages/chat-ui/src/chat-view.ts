@@ -12,6 +12,12 @@ import type { ChatMessage, ChatRole, ChatViewLabels, ChatViewOptions } from './t
 export class ChatView {
   /** Root element — append this to your container. */
   readonly el: HTMLDivElement;
+  /**
+   * An action slot directly above the input row. Populate it with your own
+   * controls (toggles, quick actions) for an IM-style compose toolbar; it
+   * collapses when empty.
+   */
+  readonly actionsEl: HTMLDivElement;
 
   private readonly messagesEl: HTMLDivElement;
   private readonly emptyEl: HTMLDivElement;
@@ -61,7 +67,12 @@ export class ChatView {
     });
 
     inputRow.append(this.input, this.sendBtn);
-    this.el.append(this.messagesEl, inputRow);
+
+    // Compose toolbar slot: host-populated controls just above the input.
+    this.actionsEl = document.createElement('div');
+    this.actionsEl.className = 'cui-actions';
+
+    this.el.append(this.messagesEl, this.actionsEl, inputRow);
   }
 
   /** Append a finished message and scroll to it. Returns the bubble element. */

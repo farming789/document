@@ -94,6 +94,19 @@ export const CHAT_UI_CSS = `
   animation: cui-blink 1s steps(2, start) infinite;
 }
 @keyframes cui-blink { to { visibility: hidden; } }
+/* Compose toolbar: host-populated quick actions just above the input. */
+.cui-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 0;
+  font-size: 13px;
+}
+.cui-actions:empty {
+  display: none;
+}
 .cui-input-row {
   flex: 0 0 auto;
   display: flex;

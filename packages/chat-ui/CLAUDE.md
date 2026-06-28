@@ -42,6 +42,9 @@ container.appendChild(chat.el);   // mount the root element
 | `getInput()` / `setInput(text)` / `focus()` | Input helpers (e.g. prepend a quote). |
 | `setLabels(labels)` | Re-apply labels live (e.g. language change). |
 
+`chat.actionsEl` is a host-populated slot directly above the input (an IM-style
+compose toolbar) — append your own controls; it collapses when empty.
+
 ## Canonical streaming flow
 
 ```ts
