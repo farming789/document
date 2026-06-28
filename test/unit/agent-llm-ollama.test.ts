@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { OllamaProvider } from '../../lib/agent-plugin/llm/ollama';
-import { clearApiKey } from '../../lib/agent-plugin/llm/keys';
+import { OllamaProvider } from '@ranuts/agent-core/llm/ollama';
+import { clearApiKey } from '@ranuts/agent-core/llm/keys';
 
 const okResponse = (body: unknown): Response => ({ ok: true, json: async () => body }) as unknown as Response;
 

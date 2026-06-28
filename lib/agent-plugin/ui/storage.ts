@@ -10,7 +10,7 @@
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
 import { t } from '../../i18n';
 import type { ChatTurn } from './controller';
-import type { LLMMessage } from '../llm/types';
+import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 
 const STORAGE_PREFIX = 'agent_history_';
 

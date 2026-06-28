@@ -10,7 +10,6 @@
  * LLMProvider interface and the AgentTool registry, so it is fully unit-testable
  * with a scripted provider and mock tools.
  */
-import { agentTools as defaultTools } from './tools';
 import type { AgentTool } from './types';
 import type { LLMContent, LLMMessage, LLMProvider, LLMToolDef } from './llm/types';
 
@@ -62,7 +61,8 @@ export async function runAgent(
   userMessage: string,
   options: AgentRunOptions = {},
 ): Promise<AgentRunResult> {
-  const tools = options.tools ?? defaultTools;
+  // Editor-agnostic: callers pass their tool registry; default to none.
+  const tools = options.tools ?? {};
   const maxIterations = options.maxIterations ?? 8;
   const toolDefs = toLLMToolDefs(tools);
 

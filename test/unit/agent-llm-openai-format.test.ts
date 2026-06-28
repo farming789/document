@@ -5,8 +5,8 @@ import {
   parseOpenAIResponse,
   toOpenAIMessages,
   toOpenAITools,
-} from '../../lib/agent-plugin/llm/openai-format';
-import type { LLMMessage } from '../../lib/agent-plugin/llm/types';
+} from '@ranuts/agent-core/llm/openai-format';
+import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 
 async function* asStream(chunks: OpenAIStreamChunk[]): AsyncIterable<OpenAIStreamChunk> {
   for (const chunk of chunks) yield chunk;

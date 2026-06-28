@@ -7,10 +7,10 @@
  * tested with a mock provider.
  */
 import { t } from '../../i18n';
-import { runAgent } from '../runtime';
+import { runAgent } from '@ranuts/agent-core/runtime';
 import type { HistoryStorage } from './storage';
-import type { AgentTool } from '../types';
-import type { LLMMessage, LLMProvider } from '../llm/types';
+import type { AgentTool } from '@ranuts/agent-core/types';
+import type { LLMMessage, LLMProvider } from '@ranuts/agent-core/llm/types';
 
 export interface ChatTurn {
   role: 'user' | 'agent' | 'tool' | 'error';

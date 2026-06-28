@@ -18,9 +18,10 @@ import { createEffect, signal } from 'ranui/builder';
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
 import { getLanguage, type I18nMessages, t } from '../../i18n';
 import { getEditorApi } from '../editor-bridge';
-import { createProvider, defaultProviderId, type ProviderId } from '../llm/factory';
-import { getApiKey, setApiKey } from '../llm/keys';
-import { DEFAULT_WEBLLM_MODEL, isModelCached, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '../llm/webllm';
+import { agentTools } from '../tools';
+import { createProvider, defaultProviderId, type ProviderId } from '@ranuts/agent-core/llm/factory';
+import { getApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
+import { DEFAULT_WEBLLM_MODEL, isModelCached, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '@ranuts/agent-core/llm/webllm';
 import { ChatView, type ChatViewLabels } from '@ranuts/chat-ui';
 import { AgentChatController, type ChatTurn } from './controller';
 import { createHistoryStorage, historyToTurns } from './storage';
@@ -227,7 +228,10 @@ export function createAgentPanel(): HTMLElement {
   const historyStorage = createHistoryStorage();
 
   // Streaming: ChatView owns the live bubble; just forward deltas and the end.
+  // The editor tools must be passed explicitly now that the (editor-agnostic)
+  // runtime no longer defaults to them.
   const controllerOptions = {
+    tools: agentTools,
     onAgentDelta: (delta: string): void => chat.appendDelta(delta),
     onAgentStreamEnd: (): void => chat.endStream(),
     storage: historyStorage,

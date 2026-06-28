@@ -1,0 +1,32 @@
+{
+  "name": "@ranuts/agent-core",
+  "version": "0.0.1",
+  "description": "Editor-agnostic agent core: a provider-neutral LLM layer (Claude / OpenAI / Gemini / Ollama / WebLLM) and a tool-use runtime loop. No UI, no editor.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./runtime": { "types": "./dist/runtime.d.ts", "import": "./dist/runtime.js" },
+    "./types": { "types": "./dist/types.d.ts", "import": "./dist/types.js" },
+    "./llm": { "types": "./dist/llm/index.d.ts", "import": "./dist/llm/index.js" },
+    "./llm/*": { "types": "./dist/llm/*.d.ts", "import": "./dist/llm/*.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepare": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
+    "@mlc-ai/web-llm": "^0.2.84"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "keywords": ["agent", "llm", "tool-use", "anthropic", "openai", "gemini", "ollama", "webllm"],
+  "license": "MIT"
+}

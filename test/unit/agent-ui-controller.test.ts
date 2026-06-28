@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { t } from '../../lib/i18n';
 import { AgentChatController, type ChatTurn } from '../../lib/agent-plugin/ui/controller';
-import type { AgentTool } from '../../lib/agent-plugin/types';
-import type { LLMMessage, LLMProvider, LLMResponse } from '../../lib/agent-plugin/llm/types';
+import type { AgentTool } from '@ranuts/agent-core/types';
+import type { LLMMessage, LLMProvider, LLMResponse } from '@ranuts/agent-core/llm/types';
 
 const textResponse = (text: string): LLMResponse => ({
   text,

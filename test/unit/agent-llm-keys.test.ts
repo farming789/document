@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { clearApiKey, getApiKey, setApiKey } from '../../lib/agent-plugin/llm/keys';
+import { clearApiKey, getApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
 
 describe('agent llm keys', () => {
   afterEach(() => {

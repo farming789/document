@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { OpenAIProvider } from '../../lib/agent-plugin/llm/openai';
-import { clearApiKey, setApiKey } from '../../lib/agent-plugin/llm/keys';
+import { OpenAIProvider } from '@ranuts/agent-core/llm/openai';
+import { clearApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
 
 const okResponse = (body: unknown): Response => ({ ok: true, json: async () => body }) as unknown as Response;
 

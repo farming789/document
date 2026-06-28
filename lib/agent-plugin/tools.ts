@@ -7,7 +7,7 @@
  * get_document_text, add_comment, plus spreadsheet-only set_cell / get_cell.
  */
 import { requireEditorApi, requireEditorContext } from './editor-bridge';
-import type { AgentTool } from './types';
+import type { AgentTool } from '@ranuts/agent-core/types';
 
 /**
  * Convert plain text into the minimal HTML `pluginMethod_PasteHtml` expects.

@@ -4,8 +4,8 @@ import {
   isWebGPUAvailable,
   WEBLLM_MODELS,
   WebLLMProvider,
-} from '../../lib/agent-plugin/llm/webllm';
-import { createProvider, defaultProviderId } from '../../lib/agent-plugin/llm/factory';
+} from '@ranuts/agent-core/llm/webllm';
+import { createProvider, defaultProviderId } from '@ranuts/agent-core/llm/factory';
 
 describe('WebLLMProvider', () => {
   it('reports WebGPU unavailable under jsdom', () => {

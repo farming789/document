@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { type AgentEvent, runAgent, toLLMToolDefs } from '../../lib/agent-plugin/runtime';
-import type { AgentTool } from '../../lib/agent-plugin/types';
-import type { LLMMessage, LLMProvider, LLMResponse } from '../../lib/agent-plugin/llm/types';
+import { type AgentEvent, runAgent, toLLMToolDefs } from '@ranuts/agent-core/runtime';
+import type { AgentTool } from '@ranuts/agent-core/types';
+import type { LLMMessage, LLMProvider, LLMResponse } from '@ranuts/agent-core/llm/types';
 
 const textResponse = (text: string): LLMResponse => ({
   text,

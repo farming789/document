@@ -4,9 +4,9 @@ import {
   parseGeminiResponse,
   toGeminiContents,
   toGeminiTools,
-} from '../../lib/agent-plugin/llm/gemini';
-import { clearApiKey, setApiKey } from '../../lib/agent-plugin/llm/keys';
-import type { LLMMessage } from '../../lib/agent-plugin/llm/types';
+} from '@ranuts/agent-core/llm/gemini';
+import { clearApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
+import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 
 const okResponse = (body: unknown): Response => ({ ok: true, json: async () => body }) as unknown as Response;
 

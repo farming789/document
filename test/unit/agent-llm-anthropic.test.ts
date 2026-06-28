@@ -4,9 +4,9 @@ import {
   parseAnthropicResponse,
   toAnthropicMessage,
   toAnthropicTool,
-} from '../../lib/agent-plugin/llm/anthropic';
-import { clearApiKey, setApiKey } from '../../lib/agent-plugin/llm/keys';
-import type { LLMMessage } from '../../lib/agent-plugin/llm/types';
+} from '@ranuts/agent-core/llm/anthropic';
+import { clearApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
+import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 
 describe('anthropic provider conversion', () => {
   it('maps a tool definition to input_schema shape', () => {
