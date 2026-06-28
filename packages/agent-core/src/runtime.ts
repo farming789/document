@@ -78,12 +78,17 @@ export async function runAgent(
     // response shape is identical, so the rest of the loop is unchanged.
     let streamed = false;
     const response = provider.chatStream
-      ? await provider.chatStream(messages, toolDefs, (delta) => {
-          if (!delta) return;
-          streamed = true;
-          options.onEvent?.({ type: 'assistant_delta', text: delta });
-        })
-      : await provider.chat(messages, toolDefs);
+      ? await provider.chatStream(
+          messages,
+          toolDefs,
+          (delta) => {
+            if (!delta) return;
+            streamed = true;
+            options.onEvent?.({ type: 'assistant_delta', text: delta });
+          },
+          options.signal,
+        )
+      : await provider.chat(messages, toolDefs, options.signal);
     messages.push(response.assistant);
     if (response.text) options.onEvent?.({ type: 'assistant', text: response.text, streamed });
 

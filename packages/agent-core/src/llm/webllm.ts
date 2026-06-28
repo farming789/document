@@ -46,6 +46,8 @@ export const DEFAULT_WEBLLM_MODEL = 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC';
 /** The slice of the WebLLM engine this provider uses (eases test mocking). */
 export interface WebLLMEngine {
   chat: { completions: { create(body: Record<string, unknown>): Promise<OpenAICompletion> } };
+  /** Stop the in-flight generation (so Stop works mid-stream). */
+  interruptGenerate?(): void | Promise<void>;
 }
 
 /** Progress report while a model downloads/loads. */
@@ -119,35 +121,50 @@ export class WebLLMProvider implements LLMProvider {
     return this.enginePromise;
   }
 
-  async chat(messages: LLMMessage[], tools: LLMToolDef[]): Promise<LLMResponse> {
+  async chat(messages: LLMMessage[], tools: LLMToolDef[], signal?: AbortSignal): Promise<LLMResponse> {
     const engine = await this.getEngine();
-    const completion = await engine.chat.completions.create({
-      // Hermes function calling forbids a custom system prompt, so omit it when
-      // sending tools (WebLLM injects its own tool-calling system prompt).
-      messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
-      tools: toOpenAITools(tools),
-      tool_choice: 'auto',
-    });
-    return parseOpenAIResponse(completion);
+    const onAbort = () => void engine.interruptGenerate?.();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      const completion = await engine.chat.completions.create({
+        // Hermes function calling forbids a custom system prompt, so omit it when
+        // sending tools (WebLLM injects its own tool-calling system prompt).
+        messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
+        tools: toOpenAITools(tools),
+        tool_choice: 'auto',
+      });
+      return parseOpenAIResponse(completion);
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
+    }
   }
 
   async chatStream(
     messages: LLMMessage[],
     tools: LLMToolDef[],
     onDelta: (textDelta: string) => void,
+    signal?: AbortSignal,
   ): Promise<LLMResponse> {
     const engine = await this.getEngine();
-    // With `stream: true` WebLLM returns an async iterable of OpenAI-format
-    // chunks instead of a completion; the shared accumulator folds them back
-    // into a completion that parses identically to the non-streaming path.
-    const stream = (await engine.chat.completions.create({
-      // See chat(): Hermes + tools forbids a custom system prompt.
-      messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
-      tools: toOpenAITools(tools),
-      tool_choice: 'auto',
-      stream: true,
-    })) as unknown as AsyncIterable<OpenAIStreamChunk>;
-    const completion = await accumulateOpenAIStream(stream, onDelta);
-    return parseOpenAIResponse(completion);
+    // Stop: interrupt the engine so it stops generating, and the accumulator
+    // (also passed the signal) breaks out of the chunk loop.
+    const onAbort = () => void engine.interruptGenerate?.();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      // With `stream: true` WebLLM returns an async iterable of OpenAI-format
+      // chunks instead of a completion; the shared accumulator folds them back
+      // into a completion that parses identically to the non-streaming path.
+      const stream = (await engine.chat.completions.create({
+        // See chat(): Hermes + tools forbids a custom system prompt.
+        messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
+        tools: toOpenAITools(tools),
+        tool_choice: 'auto',
+        stream: true,
+      })) as unknown as AsyncIterable<OpenAIStreamChunk>;
+      const completion = await accumulateOpenAIStream(stream, onDelta, signal);
+      return parseOpenAIResponse(completion);
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
+    }
   }
 }

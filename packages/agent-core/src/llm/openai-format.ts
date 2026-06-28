@@ -102,11 +102,13 @@ export interface OpenAIStreamChunk {
 export async function accumulateOpenAIStream(
   chunks: AsyncIterable<OpenAIStreamChunk>,
   onDelta: (textDelta: string) => void,
+  signal?: AbortSignal,
 ): Promise<OpenAICompletion> {
   let content = '';
   let finishReason: string | undefined;
   const byIndex = new Map<number, { id: string; name: string; args: string }>();
   for await (const chunk of chunks) {
+    if (signal?.aborted) break; // Stop pressed — quit consuming the stream
     const choice = chunk.choices?.[0];
     if (!choice) continue;
     const piece = choice.delta?.content;
