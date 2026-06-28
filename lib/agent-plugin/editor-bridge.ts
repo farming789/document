@@ -65,7 +65,10 @@ export interface CommentData {
 
 /** The editor frame's `Asc` namespace (only the parts we construct are typed). */
 export interface EditorAsc {
-  asc_CCommentDataWord: new () => CommentData;
+  /** Word comment-data constructor (Word editor only). */
+  asc_CCommentDataWord?: new () => CommentData;
+  /** Comment-data constructor used by the spreadsheet/presentation editors. */
+  asc_CCommentData?: new () => CommentData;
   [key: string]: unknown;
 }
 

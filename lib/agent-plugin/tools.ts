@@ -185,7 +185,13 @@ export const addCommentTool: AgentTool<AddCommentParams, { added: true }> = {
       throw new TypeError('add_comment requires a string "text" parameter');
     }
     const { api, Asc } = requireEditorContext();
-    const data = new Asc.asc_CCommentDataWord();
+    // Word uses asc_CCommentDataWord; the spreadsheet/presentation editors use
+    // asc_CCommentData. Pick whichever this editor exposes.
+    const CommentCtor = Asc.asc_CCommentDataWord ?? Asc.asc_CCommentData;
+    if (typeof CommentCtor !== 'function') {
+      throw new Error('add_comment is not supported in this editor');
+    }
+    const data = new CommentCtor();
     data.asc_putText(text);
     data.asc_putUserName(author);
     api.asc_addComment(data);
