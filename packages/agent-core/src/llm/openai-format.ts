@@ -41,9 +41,13 @@ export function toOpenAITools(tools: LLMToolDef[]): Record<string, unknown>[] {
   }));
 }
 
-/** Convert neutral messages (+ system prompt) to OpenAI chat messages. */
-export function toOpenAIMessages(messages: LLMMessage[], systemPrompt: string): OpenAIMessage[] {
-  const out: OpenAIMessage[] = [{ role: 'system', content: systemPrompt }];
+/**
+ * Convert neutral messages (+ optional system prompt) to OpenAI chat messages.
+ * A falsy `systemPrompt` adds no system message — required for WebLLM's Hermes
+ * function calling, which forbids a custom system prompt alongside tools.
+ */
+export function toOpenAIMessages(messages: LLMMessage[], systemPrompt?: string): OpenAIMessage[] {
+  const out: OpenAIMessage[] = systemPrompt ? [{ role: 'system', content: systemPrompt }] : [];
   for (const message of messages) {
     if (typeof message.content === 'string') {
       out.push({ role: message.role, content: message.content });

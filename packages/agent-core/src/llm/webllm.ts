@@ -122,7 +122,9 @@ export class WebLLMProvider implements LLMProvider {
   async chat(messages: LLMMessage[], tools: LLMToolDef[]): Promise<LLMResponse> {
     const engine = await this.getEngine();
     const completion = await engine.chat.completions.create({
-      messages: toOpenAIMessages(messages, this.systemPrompt),
+      // Hermes function calling forbids a custom system prompt, so omit it when
+      // sending tools (WebLLM injects its own tool-calling system prompt).
+      messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
       tools: toOpenAITools(tools),
       tool_choice: 'auto',
     });
@@ -139,7 +141,8 @@ export class WebLLMProvider implements LLMProvider {
     // chunks instead of a completion; the shared accumulator folds them back
     // into a completion that parses identically to the non-streaming path.
     const stream = (await engine.chat.completions.create({
-      messages: toOpenAIMessages(messages, this.systemPrompt),
+      // See chat(): Hermes + tools forbids a custom system prompt.
+      messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
       tools: toOpenAITools(tools),
       tool_choice: 'auto',
       stream: true,
