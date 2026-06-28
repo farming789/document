@@ -8,7 +8,7 @@
  * role/prefix conventions the controller emits live.
  */
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
-import { t } from '../../i18n';
+import { t } from '@ranuts/shared/i18n';
 import type { ChatTurn } from './controller';
 import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 

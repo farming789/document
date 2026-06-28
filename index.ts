@@ -2,7 +2,7 @@ import { getAllQueryString } from 'ranuts/utils';
 import { initEmbedApi } from './lib/embed-api';
 import { initEvents, setEventUICallbacks } from './lib/events';
 import { onCreateNew, openDocumentFromUrl, setUICallbacks } from './lib/document';
-import { parseReadonly } from './lib/document-utils';
+import { parseReadonly } from '@ranuts/shared/document-utils';
 import {
   createControlPanel,
   createFixedActionButton,

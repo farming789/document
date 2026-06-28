@@ -6,7 +6,7 @@
  * over this; all orchestration and state logic lives here so it can be unit
  * tested with a mock provider.
  */
-import { t } from '../../i18n';
+import { t } from '@ranuts/shared/i18n';
 import { runAgent } from '@ranuts/agent-core/runtime';
 import type { HistoryStorage } from './storage';
 import type { AgentTool } from '@ranuts/agent-core/types';

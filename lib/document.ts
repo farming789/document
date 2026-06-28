@@ -1,5 +1,5 @@
 import { createObjectURL } from 'ranuts/utils';
-import { getDocmentObj, setDocmentObj } from '../store';
+import { getDocmentObj, setDocmentObj } from '@ranuts/shared/store';
 import { handleDocumentOperation, initX2T, loadEditorApi, loadScript } from './converter';
 import { showLoading } from './loading';
 

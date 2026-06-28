@@ -1,6 +1,6 @@
 import { MessageCodec, Platform, createObjectURL } from 'ranuts/utils';
 import type { MessageHandler } from 'ranuts/utils';
-import { getDocmentObj, setDocmentObj } from '../store';
+import { getDocmentObj, setDocmentObj } from '@ranuts/shared/store';
 import { handleDocumentOperation, initX2T } from './converter';
 import { showLoading } from './loading';
 

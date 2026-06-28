@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
-import { t } from './i18n';
+import { t } from '@ranuts/shared/i18n';
 import { showLoading } from './loading';
 import { onCreateNew, onOpenDocument } from './document';
 

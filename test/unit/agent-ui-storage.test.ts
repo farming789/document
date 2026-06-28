@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createHistoryStorage, historyToTurns } from '../../lib/agent-plugin/ui/storage';
-import { t } from '../../lib/i18n';
+import { t } from '@ranuts/shared/i18n';
 import type { LLMMessage } from '@ranuts/agent-core/llm/types';
 
 describe('createHistoryStorage', () => {

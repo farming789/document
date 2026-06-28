@@ -5,7 +5,7 @@ import {
   getDocumentType,
   getMimeTypeFromExtension,
   parseReadonly,
-} from '../../lib/document-utils';
+} from '@ranuts/shared/document-utils';
 
 describe('document utils', () => {
   it('classifies common document extensions', () => {

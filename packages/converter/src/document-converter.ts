@@ -1,8 +1,8 @@
 import { createObjectURL, getExtensions, scriptOnLoad } from 'ranuts/utils';
 import 'ranui/message';
-import { t } from './i18n';
-import type { BinConversionResult, ConversionResult, DocumentType, EmscriptenModule } from './document-types';
-import { BASE_PATH, DOCUMENT_TYPE_MAP } from './document-utils';
+import { t } from '@ranuts/shared/i18n';
+import type { BinConversionResult, ConversionResult, DocumentType, EmscriptenModule } from '@ranuts/shared/document-types';
+import { BASE_PATH, DOCUMENT_TYPE_MAP } from '@ranuts/shared/document-utils';
 import { extractDocxMediaUrls } from './docx-zip';
 
 const MIME_MAP: Record<string, string> = {
@@ -731,7 +731,10 @@ export class X2TConverter {
       const writable = await fileHandle.createWritable();
       await writable.write(data);
       await writable.close();
-      window?.message?.success?.(`${t('fileSavedSuccess')}${fileName}`);
+      // ranui/message registers a global `window.message` toast API (untyped).
+      (window as unknown as { message?: { success?: (msg: string) => void } }).message?.success?.(
+        `${t('fileSavedSuccess')}${fileName}`,
+      );
       console.log('File saved successfully:', fileName);
     } catch (error) {
       if ((error as Error).name === 'AbortError') {

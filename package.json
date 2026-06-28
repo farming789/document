@@ -70,6 +70,8 @@
     "@mlc-ai/web-llm": "^0.2.84",
     "@ranuts/agent-core": "workspace:*",
     "@ranuts/chat-ui": "workspace:*",
+    "@ranuts/converter": "workspace:*",
+    "@ranuts/shared": "workspace:*",
     "ranui": "0.1.10-alpha-27",
     "ranuts": "0.1.0-alpha-23"
   }

@@ -1,10 +1,10 @@
 import { getExtensions } from 'ranuts/utils';
 import { g_sEmpty_bin } from './empty_bin';
-import { t } from './i18n';
-import { X2TConverter } from './document-converter';
+import { t } from '@ranuts/shared/i18n';
+import { X2TConverter } from '@ranuts/converter';
 import { createEditorInstance, loadEditorApi, setConverterCallbacks } from './onlyoffice-editor';
-import { getDocumentType } from './document-utils';
-import type { BinConversionResult, ConversionResult, EmscriptenModule } from './document-types';
+import { getDocumentType } from '@ranuts/shared/document-utils';
+import type { BinConversionResult, ConversionResult, EmscriptenModule } from '@ranuts/shared/document-types';
 
 // Export types
 export type {
@@ -13,13 +13,13 @@ export type {
   EmscriptenModule,
   DocumentType,
   SaveEvent,
-} from './document-types';
+} from '@ranuts/shared/document-types';
 
 // Export constants
 export { oAscFileType, c_oAscFileType2 } from './file-types';
 
 // Export utilities
-export { getDocumentType, getBasePath, BASE_PATH, DOCUMENT_TYPE_MAP } from './document-utils';
+export { getDocumentType, getBasePath, BASE_PATH, DOCUMENT_TYPE_MAP } from '@ranuts/shared/document-utils';
 
 // Singleton instance
 const x2tConverter = new X2TConverter();

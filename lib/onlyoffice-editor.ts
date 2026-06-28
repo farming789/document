@@ -1,10 +1,10 @@
 import 'ranui/message';
 import { createObjectURL } from 'ranuts/utils';
-import { getDocmentObj } from '../store';
-import { getOnlyOfficeLang, t } from './i18n';
+import { getDocmentObj } from '@ranuts/shared/store';
+import { getOnlyOfficeLang, t } from '@ranuts/shared/i18n';
 import { c_oAscFileType2 } from './file-types';
-import type { BinConversionResult, SaveEvent } from './document-types';
-import { getMimeTypeFromExtension } from './document-utils';
+import type { BinConversionResult, SaveEvent } from '@ranuts/shared/document-types';
+import { getMimeTypeFromExtension } from '@ranuts/shared/document-utils';
 
 // Import converter function to avoid circular dependency
 let convertBinToDocumentFn:

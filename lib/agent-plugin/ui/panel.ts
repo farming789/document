@@ -16,7 +16,7 @@ import 'ranui/select';
 import 'ranui/checkbox';
 import { createEffect, signal } from 'ranui/builder';
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
-import { getLanguage, type I18nMessages, t } from '../../i18n';
+import { getLanguage, type I18nMessages, t } from '@ranuts/shared/i18n';
 import { getEditorApi } from '../editor-bridge';
 import { agentTools } from '../tools';
 import { createProvider, defaultProviderId, type ProviderId } from '@ranuts/agent-core/llm/factory';
