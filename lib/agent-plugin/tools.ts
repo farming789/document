@@ -102,8 +102,9 @@ export interface SetReviewModeParams {
 export const setReviewModeTool: AgentTool<SetReviewModeParams, { enabled: boolean }> = {
   name: 'set_review_mode',
   description:
-    "Turn the document's track-changes (review) mode on or off. When on, every " +
-    'edit is recorded as a revision the user can accept or reject.',
+    "Word documents only. Turn the document's track-changes (review) mode on or " +
+    'off. When on, every edit is recorded as a revision the user can accept or ' +
+    'reject. Not available in spreadsheets or presentations.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -118,6 +119,11 @@ export const setReviewModeTool: AgentTool<SetReviewModeParams, { enabled: boolea
       throw new TypeError('set_review_mode requires a boolean "enabled" parameter');
     }
     const api = requireEditorApi();
+    // Track-changes is a Word-only API; the spreadsheet/presentation editors have
+    // no asc_SetTrackRevisions, so guard instead of throwing "not a function".
+    if (typeof api.asc_SetTrackRevisions !== 'function' || typeof api.asc_IsTrackRevisions !== 'function') {
+      throw new Error('set_review_mode is only available in the Word editor');
+    }
     api.asc_SetTrackRevisions(enabled);
     return { enabled: api.asc_IsTrackRevisions() };
   },
