@@ -420,9 +420,14 @@ export function createAgentPanel(): HTMLElement {
   document.body.append(panel, launcher);
   setOpen(true); // start open + docked
 
-  // Auto-load the default local model on open (per product choice). Cloud
-  // providers are ready on first send once a key is set, so only WebLLM needs this.
-  if (currentProvider() === 'webllm' && isWebGPUAvailable()) void loadModel();
+  // Auto-load the default local model on open — but only when it's already
+  // cached, so opening the panel never triggers a surprise ~4 GB download. If
+  // it's not cached, the note hints at the download and the user clicks Load.
+  if (currentProvider() === 'webllm' && isWebGPUAvailable()) {
+    void isModelCached(modelSelect.value).then((cached) => {
+      if (cached) void loadModel();
+    });
+  }
 
   return panel;
 }

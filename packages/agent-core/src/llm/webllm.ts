@@ -29,18 +29,19 @@ export interface WebLLMModel {
 }
 
 /**
- * Curated, cost-effective local models (all tool-calling capable). Smaller =
- * faster + smaller download but lower quality.
+ * Local models that support **function calling** — required for the agent's
+ * tool use. WebLLM only enables tools on the Hermes family, so the small
+ * Llama/Qwen/Phi models (which can't call tools) are intentionally excluded.
+ * These are 7–8B, hence the ~4 GB+ downloads.
  */
 export const WEBLLM_MODELS: WebLLMModel[] = [
-  { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 1B（最快）', size: '~0.9 GB' },
-  { id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC', label: 'Qwen2.5 1.5B（轻量）', size: '~1.0 GB' },
-  { id: 'Phi-3.5-mini-instruct-q4f16_1-MLC', label: 'Phi-3.5 mini（均衡，推荐）', size: '~1.8 GB' },
-  { id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 3B（更强）', size: '~2.2 GB' },
+  { id: 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC', label: 'Hermes 2 Pro · Mistral 7B（最小，支持工具）', size: '~4.0 GB' },
+  { id: 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC', label: 'Hermes 3 · Llama 3.1 8B（更强）', size: '~4.7 GB' },
+  { id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC', label: 'Hermes 2 Pro · Llama 3 8B', size: '~4.7 GB' },
 ];
 
-/** The default balanced model. */
-export const DEFAULT_WEBLLM_MODEL = 'Phi-3.5-mini-instruct-q4f16_1-MLC';
+/** The default tool-capable model (smallest of the supported set). */
+export const DEFAULT_WEBLLM_MODEL = 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC';
 
 /** The slice of the WebLLM engine this provider uses (eases test mocking). */
 export interface WebLLMEngine {
