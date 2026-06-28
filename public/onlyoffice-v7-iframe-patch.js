@@ -56,14 +56,14 @@
 
   var FALLBACK = 'NotoSansSC-VF.ttf';
 
-  // Font remap is only needed in the spreadsheet (cell) editor, where v7's cell
+  // Font remap is only needed in the SPREADSHEET (cell) editor, where v7's cell
   // SDK requests CJK fonts via ascdesktop:// / Windows paths that fail in the
-  // browser (#62, #64). The slide (presentation) editor renders text by glyph-ID
+  // browser (#62, #64). The Word and slide editors render text by glyph-ID
   // against the served font's glyph table; substituting a different TTF shifts
-  // every glyph (e.g. "Click to add title" → "Ajgai rm_bb rgjc"). Letting the
-  // request fail there makes the engine use its built-in glyph data, which is
-  // correct. So: disable remap in the presentation editor, keep it elsewhere.
-  var DISABLE_FONT_REMAP = window.location.pathname.indexOf('presentationeditor') !== -1;
+  // every glyph (Calibri style names / "Click to add title" → garbled). Letting
+  // the request fail there makes the engine use its built-in glyph data, which is
+  // correct. So: enable remap ONLY in the spreadsheet editor.
+  var DISABLE_FONT_REMAP = window.location.pathname.indexOf('spreadsheeteditor') === -1;
 
   function extractFilename(path) {
     // Extract bare filename from any path (forward slash, backslash, or mixed)
