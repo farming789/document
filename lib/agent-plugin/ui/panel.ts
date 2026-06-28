@@ -2,12 +2,18 @@
  * Agent sidebar panel — a thin DOM view over {@link AgentChatController}.
  *
  * Header (title + close), a settings block (provider selector → cloud API key
- * for Claude/OpenAI, or a local model picker + load button for WebLLM), a
- * toolbar (review-mode toggle + clear), a conversation list, and an input box
- * whose button toggles between Send and Stop while a run is active. All
- * orchestration lives in the controller and the LLM factory; this file only
+ * for Claude/OpenAI/Gemini, or a local model picker + load button for WebLLM, or
+ * a model-name input for Ollama), a toolbar (review-mode toggle + clear), a
+ * conversation list, and an input box whose button toggles between Send and Stop
+ * while a run is active. The form controls are ranui Web Components (r-select,
+ * r-input, r-button, r-checkbox) — importing each registers its custom element.
+ * All orchestration lives in the controller and the LLM factory; this file only
  * builds DOM and forwards events. Loaded behind `?agent=1`.
  */
+import 'ranui/button';
+import 'ranui/input';
+import 'ranui/select';
+import 'ranui/checkbox';
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
 import { type I18nMessages, t } from '../../i18n';
 import { getEditorApi } from '../editor-bridge';
@@ -16,6 +22,13 @@ import { getApiKey, setApiKey } from '../llm/keys';
 import { DEFAULT_WEBLLM_MODEL, isModelCached, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '../llm/webllm';
 import { AgentChatController, type ChatTurn } from './controller';
 import { createHistoryStorage, historyToTurns } from './storage';
+
+/** ranui custom elements expose a `value` accessor (r-select / r-input). */
+type ValueEl = HTMLElement & { value: string };
+type InputEl = ValueEl & { placeholder: string };
+
+/** The r-checkbox `change` event detail (a real boolean). */
+type CheckedDetail = CustomEvent<{ checked: boolean }>;
 
 const TURN_LABEL_KEY: Record<ChatTurn['role'], keyof I18nMessages | null> = {
   user: 'agentRoleUser',
@@ -47,6 +60,36 @@ const KEY_PLACEHOLDER: Partial<Record<ProviderId, string>> = {
   openai: 'sk-...',
   gemini: 'AIza...',
 };
+
+/** Create an r-button with a label and class. */
+function ranButton(text: string, className: string): HTMLElement {
+  const btn = document.createElement('r-button');
+  btn.className = className;
+  btn.textContent = text;
+  return btn;
+}
+
+/** Create an r-select with r-option children and an initial value. */
+function ranSelect(className: string, options: Array<{ value: string; label: string }>, value: string): ValueEl {
+  const select = document.createElement('r-select') as ValueEl;
+  select.className = className;
+  for (const option of options) {
+    const opt = document.createElement('r-option');
+    opt.setAttribute('value', option.value);
+    opt.textContent = option.label;
+    select.append(opt);
+  }
+  select.setAttribute('value', value);
+  return select;
+}
+
+/** Create an r-input of the given type. */
+function ranInput(className: string, type: string): InputEl {
+  const input = document.createElement('r-input') as InputEl;
+  input.className = className;
+  input.setAttribute('type', type);
+  return input;
+}
 
 /** Build the Agent panel, append it to the body, and return its root element. */
 export function createAgentPanel(): HTMLElement {
@@ -82,25 +125,17 @@ export function createAgentPanel(): HTMLElement {
   const settings = document.createElement('div');
   settings.className = 'agent-panel-settings';
 
-  const providerSelect = document.createElement('select');
-  providerSelect.className = 'agent-panel-provider';
-  for (const value of PROVIDER_IDS) {
-    const opt = document.createElement('option');
-    opt.value = value;
-    opt.textContent = t(PROVIDER_LABEL_KEY[value]);
-    providerSelect.append(opt);
-  }
-  providerSelect.value = defaultProviderId();
+  const providerSelect = ranSelect(
+    'agent-panel-provider',
+    PROVIDER_IDS.map((id) => ({ value: id, label: t(PROVIDER_LABEL_KEY[id]) })),
+    defaultProviderId(),
+  );
 
   // Cloud: API key input
-  const keyInput = document.createElement('input');
-  keyInput.className = 'agent-panel-key-input';
-  keyInput.type = 'password';
+  const keyInput = ranInput('agent-panel-key-input', 'password');
 
   // Ollama: local model name input (no key needed)
-  const ollamaModelInput = document.createElement('input');
-  ollamaModelInput.className = 'agent-panel-ollama-model';
-  ollamaModelInput.type = 'text';
+  const ollamaModelInput = ranInput('agent-panel-ollama-model', 'text');
   ollamaModelInput.value = localStorageGetItem(OLLAMA_MODEL_STORAGE_KEY) || '';
   ollamaModelInput.addEventListener('change', () => {
     controller = null; // different model → rebuild
@@ -110,19 +145,12 @@ export function createAgentPanel(): HTMLElement {
   // Local: model picker + load button
   const modelRow = document.createElement('div');
   modelRow.className = 'agent-panel-model-row';
-  const modelSelect = document.createElement('select');
-  modelSelect.className = 'agent-panel-model';
-  for (const model of WEBLLM_MODELS) {
-    const opt = document.createElement('option');
-    opt.value = model.id;
-    opt.textContent = `${model.label}（${model.size}）`;
-    modelSelect.append(opt);
-  }
-  modelSelect.value = DEFAULT_WEBLLM_MODEL;
-  const loadBtn = document.createElement('button');
-  loadBtn.className = 'agent-panel-load';
-  loadBtn.type = 'button';
-  loadBtn.textContent = t('agentLoadModel');
+  const modelSelect = ranSelect(
+    'agent-panel-model',
+    WEBLLM_MODELS.map((model) => ({ value: model.id, label: `${model.label}（${model.size}）` })),
+    DEFAULT_WEBLLM_MODEL,
+  );
+  const loadBtn = ranButton(t('agentLoadModel'), 'agent-panel-load');
   modelRow.append(modelSelect, loadBtn);
 
   const note = document.createElement('div');
@@ -135,19 +163,13 @@ export function createAgentPanel(): HTMLElement {
   toolbar.className = 'agent-panel-toolbar';
   const reviewLabel = document.createElement('label');
   reviewLabel.className = 'agent-panel-review';
-  const reviewCheck = document.createElement('input');
-  reviewCheck.type = 'checkbox';
-  const reviewText = document.createTextNode(' ' + t('agentReviewMode'));
+  const reviewCheck = document.createElement('r-checkbox');
+  const reviewText = document.createElement('span');
+  reviewText.textContent = t('agentReviewMode');
   reviewLabel.append(reviewCheck, reviewText);
-  const quoteBtn = document.createElement('button');
-  quoteBtn.className = 'agent-panel-quote';
-  quoteBtn.type = 'button';
-  quoteBtn.textContent = t('agentQuote');
+  const quoteBtn = ranButton(t('agentQuote'), 'agent-panel-quote');
   quoteBtn.title = t('agentQuoteTip');
-  const clearBtn = document.createElement('button');
-  clearBtn.className = 'agent-panel-clear';
-  clearBtn.type = 'button';
-  clearBtn.textContent = t('agentClear');
+  const clearBtn = ranButton(t('agentClear'), 'agent-panel-clear');
   toolbar.append(reviewLabel, quoteBtn, clearBtn);
 
   // ── Conversation ────────────────────────────────────────────────────────
@@ -195,10 +217,7 @@ export function createAgentPanel(): HTMLElement {
   textarea.className = 'agent-panel-input';
   textarea.rows = 2;
   textarea.placeholder = t('agentInputPlaceholder');
-  const sendBtn = document.createElement('button');
-  sendBtn.className = 'agent-panel-send';
-  sendBtn.type = 'button';
-  sendBtn.textContent = t('agentSend');
+  const sendBtn = ranButton(t('agentSend'), 'agent-panel-send');
   inputRow.append(textarea, sendBtn);
 
   // ── Controller wiring ───────────────────────────────────────────────────
@@ -301,14 +320,14 @@ export function createAgentPanel(): HTMLElement {
       return;
     }
     buildController();
-    loadBtn.disabled = true;
+    loadBtn.setAttribute('disabled', '');
     try {
       await webllmProvider?.preload();
       note.textContent = t('agentModelLoaded');
     } catch (error) {
       appendTurn({ role: 'error', text: error instanceof Error ? error.message : String(error) });
     } finally {
-      loadBtn.disabled = false;
+      loadBtn.removeAttribute('disabled');
     }
   });
 
@@ -372,23 +391,27 @@ export function createAgentPanel(): HTMLElement {
     textarea.focus();
   });
 
-  // Review-mode toggle reads/sets track-changes directly on the editor.
+  // Review-mode toggle reads/sets track-changes directly on the editor. r-checkbox
+  // reports the new state via the change event's detail (a real boolean), and its
+  // initial state is set through the `checked` attribute.
   const api = getEditorApi();
-  reviewCheck.disabled = !api;
-  if (api) reviewCheck.checked = !!api.asc_IsTrackRevisions();
-  reviewCheck.addEventListener('change', () => {
-    getEditorApi()?.asc_SetTrackRevisions(reviewCheck.checked);
+  if (!api) reviewCheck.setAttribute('disabled', '');
+  if (api) reviewCheck.setAttribute('checked', String(!!api.asc_IsTrackRevisions()));
+  reviewCheck.addEventListener('change', (e) => {
+    getEditorApi()?.asc_SetTrackRevisions((e as CheckedDetail).detail.checked);
   });
 
   // Re-apply translatable labels when the app language changes.
   const applyLabels = (): void => {
     launcher.title = t('agentOpenTip');
     title.textContent = t('agentTitle');
-    for (const opt of providerSelect.options) {
-      opt.textContent = t(PROVIDER_LABEL_KEY[opt.value as ProviderId]);
+    const selected = providerSelect.value;
+    for (const opt of providerSelect.querySelectorAll('r-option')) {
+      opt.textContent = t(PROVIDER_LABEL_KEY[(opt.getAttribute('value') as ProviderId) ?? 'anthropic']);
     }
+    providerSelect.setAttribute('value', selected); // nudge the closed label to retranslate
     loadBtn.textContent = t('agentLoadModel');
-    reviewText.textContent = ' ' + t('agentReviewMode');
+    reviewText.textContent = t('agentReviewMode');
     quoteBtn.textContent = t('agentQuote');
     quoteBtn.title = t('agentQuoteTip');
     clearBtn.textContent = t('agentClear');
