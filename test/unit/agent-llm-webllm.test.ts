@@ -39,9 +39,11 @@ describe('WebLLMProvider', () => {
     const body = create.mock.calls[0][0];
     expect(body.tool_choice).toBe('auto');
     // Hermes function calling forbids a custom system prompt, so when tools are
-    // passed there must be no system message.
+    // passed there must be no system message; the guidance is folded into the
+    // first user message instead.
     expect(body.messages.some((m: { role: string }) => m.role === 'system')).toBe(false);
-    expect(body.messages[0]).toEqual({ role: 'user', content: 'go' });
+    expect(body.messages[0].role).toBe('user');
+    expect(body.messages[0].content).toContain('go');
     expect(result.text).toBe('done');
   });
 

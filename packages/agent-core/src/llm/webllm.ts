@@ -11,6 +11,7 @@
  * model download.
  */
 import {
+  type OpenAIMessage,
   accumulateOpenAIStream,
   type OpenAICompletion,
   type OpenAIStreamChunk,
@@ -35,13 +36,20 @@ export interface WebLLMModel {
  * These are 7–8B, hence the ~4 GB+ downloads.
  */
 export const WEBLLM_MODELS: WebLLMModel[] = [
-  { id: 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC', label: 'Hermes 2 Pro · Mistral 7B（最小，支持工具）', size: '~4.0 GB' },
-  { id: 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC', label: 'Hermes 3 · Llama 3.1 8B（更强）', size: '~4.7 GB' },
+  { id: 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC', label: 'Hermes 3 · Llama 3.1 8B（推荐，工具最佳）', size: '~4.7 GB' },
   { id: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC', label: 'Hermes 2 Pro · Llama 3 8B', size: '~4.7 GB' },
+  { id: 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC', label: 'Hermes 2 Pro · Mistral 7B（最小）', size: '~4.0 GB' },
 ];
 
-/** The default tool-capable model (smallest of the supported set). */
-export const DEFAULT_WEBLLM_MODEL = 'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC';
+/** The default tool-capable model — the strongest of the supported set. */
+export const DEFAULT_WEBLLM_MODEL = 'Hermes-3-Llama-3.1-8B-q4f16_1-MLC';
+
+/**
+ * Generation params tuned for small local models: a low temperature for stable
+ * tool-calling, and a token cap to bound run-away repetition (a common failure
+ * mode of 7–8B models that the user can otherwise only escape via Stop).
+ */
+const GENERATION_PARAMS = { temperature: 0.3, max_tokens: 1024 } as const;
 
 /** The slice of the WebLLM engine this provider uses (eases test mocking). */
 export interface WebLLMEngine {
@@ -121,17 +129,30 @@ export class WebLLMProvider implements LLMProvider {
     return this.enginePromise;
   }
 
+  /**
+   * Build request messages for a small local model. Hermes + tools forbids a
+   * custom system prompt, so when tools are present we fold the guidance into the
+   * first user message instead (the user role is allowed) — giving the weak local
+   * model the framing it needs without tripping WebLLM's restriction.
+   */
+  private buildMessages(messages: LLMMessage[], tools: LLMToolDef[]): OpenAIMessage[] {
+    if (!tools.length) return toOpenAIMessages(messages, this.systemPrompt);
+    const out = toOpenAIMessages(messages, undefined);
+    const firstUser = out.find((m) => m.role === 'user' && typeof m.content === 'string');
+    if (firstUser) firstUser.content = `${this.systemPrompt}\n\n${firstUser.content ?? ''}`;
+    return out;
+  }
+
   async chat(messages: LLMMessage[], tools: LLMToolDef[], signal?: AbortSignal): Promise<LLMResponse> {
     const engine = await this.getEngine();
     const onAbort = () => void engine.interruptGenerate?.();
     signal?.addEventListener('abort', onAbort, { once: true });
     try {
       const completion = await engine.chat.completions.create({
-        // Hermes function calling forbids a custom system prompt, so omit it when
-        // sending tools (WebLLM injects its own tool-calling system prompt).
-        messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
+        messages: this.buildMessages(messages, tools),
         tools: toOpenAITools(tools),
         tool_choice: 'auto',
+        ...GENERATION_PARAMS,
       });
       return parseOpenAIResponse(completion);
     } finally {
@@ -155,10 +176,10 @@ export class WebLLMProvider implements LLMProvider {
       // chunks instead of a completion; the shared accumulator folds them back
       // into a completion that parses identically to the non-streaming path.
       const stream = (await engine.chat.completions.create({
-        // See chat(): Hermes + tools forbids a custom system prompt.
-        messages: toOpenAIMessages(messages, tools.length ? undefined : this.systemPrompt),
+        messages: this.buildMessages(messages, tools),
         tools: toOpenAITools(tools),
         tool_choice: 'auto',
+        ...GENERATION_PARAMS,
         stream: true,
       })) as unknown as AsyncIterable<OpenAIStreamChunk>;
       const completion = await accumulateOpenAIStream(stream, onDelta, signal);
