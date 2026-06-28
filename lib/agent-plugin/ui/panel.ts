@@ -402,7 +402,7 @@ export function createAgentPanel(): HTMLElement {
   const canReview = !!api && typeof api.asc_IsTrackRevisions === 'function';
   if (!canReview) reviewCheck.setAttribute('disabled', '');
   if (canReview) reviewCheck.setAttribute('checked', String(!!api!.asc_IsTrackRevisions()));
-  reviewCheck.addEventListener('change', (e) => {
+  reviewCheck.addEventListener('change', (e: Event) => {
     getEditorApi()?.asc_SetTrackRevisions?.((e as CheckedDetail).detail.checked);
   });
 

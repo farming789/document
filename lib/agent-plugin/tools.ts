@@ -6,17 +6,17 @@
  * insert_text, get_selection, replace_selection, set_review_mode,
  * get_document_text, add_comment, plus spreadsheet-only set_cell / get_cell.
  */
+import { escapeHtml } from 'ranuts/utils';
 import { requireEditorApi, requireEditorContext } from './editor-bridge';
 import type { AgentTool } from '@ranuts/agent-core/types';
 
 /**
  * Convert plain text into the minimal HTML `pluginMethod_PasteHtml` expects.
- * Escapes HTML-significant characters and maps newlines to `<br />` so the
- * inserted text keeps its line breaks without injecting markup.
+ * Escapes HTML-significant characters (via ranuts `escapeHtml`) and maps newlines
+ * to `<br />` so the inserted text keeps its line breaks without injecting markup.
  */
 export function textToHtml(text: string): string {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return escaped.replace(/\r\n|\r|\n/g, '<br />');
+  return escapeHtml(text).replace(/\r\n|\r|\n/g, '<br />');
 }
 
 export interface InsertTextParams {

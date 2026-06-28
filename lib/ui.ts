@@ -1,4 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
+import { ButtonBuilder, Div, View } from 'ranui/builder';
 import { t } from '@ranuts/shared/i18n';
 import { showLoading } from './loading';
 import { onCreateNew, onOpenDocument } from './document';
@@ -43,107 +44,6 @@ export const showControlPanel = (): void => {
 
 // Create fixed action button in bottom right corner
 export const createFixedActionButton = (): HTMLElement => {
-  const fabContainer = document.createElement('div');
-  fabContainer.id = 'fab-container';
-  fabContainer.className = 'fab-container';
-
-  // Main FAB button
-  const fabButton = document.createElement('button');
-  fabButton.id = 'fab-button';
-  fabButton.textContent = t('menu');
-  fabButton.className = 'fab-button';
-
-  // Menu panel - compact style
-  const menuPanel = document.createElement('div');
-  menuPanel.id = 'fab-menu';
-  menuPanel.className = 'fab-menu';
-
-  const createMenuButton = (text: string, onClick: () => void | Promise<void>, showLoadingImmediately = true) => {
-    // Create wrapper for the entire menu item
-    const menuItem = document.createElement('div');
-    menuItem.className = 'fab-menu-item';
-
-    const button = document.createElement('button');
-    button.textContent = text;
-    button.className = 'fab-menu-button';
-
-    // Handle hover on the wrapper
-    menuItem.addEventListener('mouseenter', () => {
-      menuItem.style.background = '#f5f5f5';
-    });
-    menuItem.addEventListener('mouseleave', () => {
-      menuItem.style.background = 'transparent';
-    });
-
-    button.addEventListener('click', async () => {
-      hideMenu();
-      // Only show loading immediately if specified (for operations that don't require user interaction)
-      let removeLoading: (() => void) | null = null;
-      if (showLoadingImmediately) {
-        const loadingResult = showLoading();
-        removeLoading = loadingResult.removeLoading;
-      }
-      try {
-        // Small delay to ensure menu hide animation completes
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        await onClick();
-      } catch (error) {
-        console.error('Error in menu button action:', error);
-        // Show control panel on error
-        showControlPanel();
-      } finally {
-        // Only remove loading if it was shown
-        if (removeLoading) {
-          removeLoading();
-        }
-      }
-    });
-
-    menuItem.appendChild(button);
-    return menuItem;
-  };
-
-  menuPanel.appendChild(
-    createMenuButton(
-      t('uploadDocument'),
-      () => {
-        onOpenDocument();
-        // If user cancelled, nothing happens (onchange won't fire)
-        // If user selected file, document will be opened in handleChange
-      },
-      false, // Don't show loading immediately - wait for file selection
-    ),
-  );
-  menuPanel.appendChild(
-    createMenuButton(t('newWord'), async () => {
-      await onCreateNew('.docx');
-    }),
-  );
-  menuPanel.appendChild(
-    createMenuButton(t('newExcel'), async () => {
-      await onCreateNew('.xlsx');
-    }),
-  );
-  menuPanel.appendChild(
-    createMenuButton(t('newPowerPoint'), async () => {
-      await onCreateNew('.pptx');
-    }),
-  );
-  // AI assistant entry — lazy-loads the agent panel on first click (no bundle
-  // cost until used). Idempotent: if a panel already exists (e.g. opened via
-  // ?agent=1 or a prior click), do nothing and let its own launcher reopen it.
-  menuPanel.appendChild(
-    createMenuButton(
-      t('agentTitle'),
-      async () => {
-        if (document.querySelector('.agent-panel')) return;
-        const { createAgentPanel } = await import('./agent-plugin');
-        createAgentPanel();
-      },
-      false,
-    ),
-  );
-
   let isMenuOpen = false;
   let hideMenuTimeout: NodeJS.Timeout;
 
@@ -168,40 +68,125 @@ export const createFixedActionButton = (): HTMLElement => {
     }, 200);
   };
 
-  // Show menu on hover button
-  fabButton.addEventListener('mouseenter', () => {
-    showMenu();
-  });
+  const createMenuButton = (
+    text: string,
+    onClick: () => void | Promise<void>,
+    showLoadingImmediately = true,
+  ): HTMLDivElement =>
+    Div()
+      .class('fab-menu-item')
+      // Handle hover on the wrapper
+      .on('mouseenter', function () {
+        this.style.background = '#f5f5f5';
+      })
+      .on('mouseleave', function () {
+        this.style.background = 'transparent';
+      })
+      .children(
+        ButtonBuilder()
+          .class('fab-menu-button')
+          .text(text)
+          .on('click', async () => {
+            hideMenu();
+            // Only show loading immediately if specified (for operations that don't require user interaction)
+            let removeLoading: (() => void) | null = null;
+            if (showLoadingImmediately) {
+              const loadingResult = showLoading();
+              removeLoading = loadingResult.removeLoading;
+            }
+            try {
+              // Small delay to ensure menu hide animation completes
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              await onClick();
+            } catch (error) {
+              console.error('Error in menu button action:', error);
+              // Show control panel on error
+              showControlPanel();
+            } finally {
+              // Only remove loading if it was shown
+              if (removeLoading) {
+                removeLoading();
+              }
+            }
+          })
+          .build(),
+      )
+      .build();
 
-  // Hide menu when leaving button (if not moving to menu)
-  fabButton.addEventListener('mouseleave', (e) => {
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    // If moving to menu panel, don't hide
-    if (relatedTarget && (relatedTarget === menuPanel || menuPanel.contains(relatedTarget))) {
-      return;
-    }
-    hideMenuTimeout = setTimeout(() => {
-      hideMenu();
-    }, 200);
-  });
+  // Menu panel - compact style
+  const menuPanel = Div()
+    .id('fab-menu')
+    .class('fab-menu')
+    .children(
+      createMenuButton(
+        t('uploadDocument'),
+        () => {
+          onOpenDocument();
+          // If user cancelled, nothing happens (onchange won't fire)
+          // If user selected file, document will be opened in handleChange
+        },
+        false, // Don't show loading immediately - wait for file selection
+      ),
+      createMenuButton(t('newWord'), async () => {
+        await onCreateNew('.docx');
+      }),
+      createMenuButton(t('newExcel'), async () => {
+        await onCreateNew('.xlsx');
+      }),
+      createMenuButton(t('newPowerPoint'), async () => {
+        await onCreateNew('.pptx');
+      }),
+      // AI assistant entry — lazy-loads the agent panel on first click (no bundle
+      // cost until used). Idempotent: if a panel already exists (e.g. opened via
+      // ?agent=1 or a prior click), do nothing and let its own launcher reopen it.
+      createMenuButton(
+        t('agentTitle'),
+        async () => {
+          if (document.querySelector('.agent-panel')) return;
+          const { createAgentPanel } = await import('./agent-plugin');
+          createAgentPanel();
+        },
+        false,
+      ),
+    )
+    // Keep menu visible when hovering over it
+    .on('mouseenter', () => {
+      clearTimeout(hideMenuTimeout);
+      if (!isMenuOpen) {
+        showMenu();
+      }
+    })
+    // Hide menu when leaving menu panel
+    .on('mouseleave', () => {
+      hideMenuTimeout = setTimeout(() => {
+        hideMenu();
+      }, 200);
+    })
+    .build();
 
-  // Keep menu visible when hovering over it
-  menuPanel.addEventListener('mouseenter', () => {
-    clearTimeout(hideMenuTimeout);
-    if (!isMenuOpen) {
+  // Main FAB button
+  const fabButton = ButtonBuilder()
+    .id('fab-button')
+    .class('fab-button')
+    .text(t('menu'))
+    // Show menu on hover button
+    .on('mouseenter', () => {
       showMenu();
-    }
-  });
+    })
+    // Hide menu when leaving button (if not moving to menu)
+    .on('mouseleave', (e) => {
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      // If moving to menu panel, don't hide
+      if (relatedTarget && (relatedTarget === menuPanel || menuPanel.contains(relatedTarget))) {
+        return;
+      }
+      hideMenuTimeout = setTimeout(() => {
+        hideMenu();
+      }, 200);
+    })
+    .build();
 
-  // Hide menu when leaving menu panel
-  menuPanel.addEventListener('mouseleave', () => {
-    hideMenuTimeout = setTimeout(() => {
-      hideMenu();
-    }, 200);
-  });
-
-  fabContainer.appendChild(menuPanel);
-  fabContainer.appendChild(fabButton);
+  const fabContainer = Div().id('fab-container').class('fab-container').children(menuPanel, fabButton).build();
   document.body.appendChild(fabContainer);
   return fabContainer;
 };
@@ -226,32 +211,6 @@ export const showMenuGuide = (): void => {
     return;
   }
 
-  // Create guide container
-  const guide = document.createElement('div');
-  guide.id = 'menu-guide';
-  guide.className = 'menu-guide';
-
-  // Create arrow pointing down
-  const arrow = document.createElement('div');
-  arrow.className = 'menu-guide-arrow';
-
-  // Create text content
-  const text = document.createElement('div');
-  text.textContent = t('menuGuide');
-  text.className = 'menu-guide-text';
-
-  // Create close button
-  const closeBtn = document.createElement('button');
-  closeBtn.innerHTML = '×';
-  closeBtn.className = 'menu-guide-close';
-
-  closeBtn.addEventListener('mouseenter', () => {
-    closeBtn.style.color = '#333';
-  });
-  closeBtn.addEventListener('mouseleave', () => {
-    closeBtn.style.color = '#999';
-  });
-
   const hideGuide = (saveToStorage = false) => {
     if (saveToStorage) {
       localStorageSetItem(MENU_GUIDE_DISMISSED_KEY, 'true');
@@ -267,14 +226,29 @@ export const showMenuGuide = (): void => {
     }
   };
 
-  closeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    hideGuide(true);
-  });
+  const guide = Div()
+    .id('menu-guide')
+    .class('menu-guide')
+    .children(
+      Div().class('menu-guide-arrow').build(),
+      Div().class('menu-guide-text').text(t('menuGuide')).build(),
+      ButtonBuilder()
+        .class('menu-guide-close')
+        .text('×')
+        .on('mouseenter', function () {
+          this.style.color = '#333';
+        })
+        .on('mouseleave', function () {
+          this.style.color = '#999';
+        })
+        .on('click', (e) => {
+          e.stopPropagation();
+          hideGuide(true);
+        })
+        .build(),
+    )
+    .build();
 
-  guide.appendChild(arrow);
-  guide.appendChild(text);
-  guide.appendChild(closeBtn);
   document.body.appendChild(guide);
   menuGuideElement = guide;
 
@@ -299,87 +273,55 @@ export const showMenuGuide = (): void => {
 
 // Create and append the control panel
 export const createControlPanel = (): void => {
-  // Create control panel container - centered in viewport
-  const container = document.createElement('div');
-  container.id = 'control-panel-container';
-  container.className = 'control-panel-container';
+  // Helper: a text-style r-button with the panel's hover treatment
+  const createTextButton = (id: string, text: string, onClick: () => void): HTMLElement =>
+    View('r-button')
+      .id(id)
+      .class('control-panel-button')
+      .text(text)
+      .attr('variant', 'text')
+      .attr('type', 'text')
+      .on('mouseenter', function () {
+        this.style.color = '#667eea';
+        this.style.transform = 'scale(1.05)';
+      })
+      .on('mouseleave', function () {
+        this.style.color = '#333';
+        this.style.transform = 'scale(1)';
+      })
+      .on('click', onClick)
+      .build();
 
-  // Create button group - centered horizontally with wrap support
-  const buttonGroup = document.createElement('div');
-  buttonGroup.className = 'control-panel-button-group';
-
-  // Helper function to create text button
-  const createTextButton = (id: string, text: string, onClick: () => void) => {
-    const button = document.createElement('r-button');
-    button.id = id;
-    button.textContent = text;
-    button.setAttribute('variant', 'text');
-    button.setAttribute('type', 'text');
-    button.className = 'control-panel-button';
-
-    button.addEventListener('mouseenter', () => {
-      button.style.color = '#667eea';
-      button.style.transform = 'scale(1.05)';
+  const newDocButton = (id: string, label: string, ext: string): HTMLElement =>
+    createTextButton(id, label, async () => {
+      hideControlPanel();
+      const { removeLoading } = showLoading();
+      try {
+        await onCreateNew(ext);
+      } catch (error) {
+        console.error(`Error creating new document (${ext}):`, error);
+        showControlPanel();
+      } finally {
+        removeLoading();
+      }
     });
-    button.addEventListener('mouseleave', () => {
-      button.style.color = '#333';
-      button.style.transform = 'scale(1)';
-    });
-    button.addEventListener('click', onClick);
 
-    return button;
-  };
+  // Button group - centered horizontally with wrap support
+  const buttonGroup = Div()
+    .class('control-panel-button-group')
+    .children(
+      createTextButton('upload-button', t('uploadDocument'), () => {
+        onOpenDocument();
+        // If user cancelled, nothing happens (onchange won't fire, panel stays visible)
+        // If user selected a file, the document opens and the panel hides in handleChange
+      }),
+      newDocButton('new-word-button', t('newWord'), '.docx'),
+      newDocButton('new-excel-button', t('newExcel'), '.xlsx'),
+      newDocButton('new-pptx-button', t('newPowerPoint'), '.pptx'),
+    )
+    .build();
 
-  // Create four buttons
-  const uploadButton = createTextButton('upload-button', t('uploadDocument'), () => {
-    onOpenDocument();
-    // If user cancelled, nothing happens (onchange won't fire, control panel remains visible)
-    // If user selected file, document will be opened and control panel will be hidden in handleChange
-  });
-  buttonGroup.appendChild(uploadButton);
-
-  const newWordButton = createTextButton('new-word-button', t('newWord'), async () => {
-    hideControlPanel();
-    const { removeLoading } = showLoading();
-    try {
-      await onCreateNew('.docx');
-    } catch (error) {
-      console.error('Error creating new Word document:', error);
-      showControlPanel();
-    } finally {
-      removeLoading();
-    }
-  });
-  buttonGroup.appendChild(newWordButton);
-
-  const newExcelButton = createTextButton('new-excel-button', t('newExcel'), async () => {
-    hideControlPanel();
-    const { removeLoading } = showLoading();
-    try {
-      await onCreateNew('.xlsx');
-    } catch (error) {
-      console.error('Error creating new Excel document:', error);
-      showControlPanel();
-    } finally {
-      removeLoading();
-    }
-  });
-  buttonGroup.appendChild(newExcelButton);
-
-  const newPptxButton = createTextButton('new-pptx-button', t('newPowerPoint'), async () => {
-    hideControlPanel();
-    const { removeLoading } = showLoading();
-    try {
-      await onCreateNew('.pptx');
-    } catch (error) {
-      console.error('Error creating new PowerPoint document:', error);
-      showControlPanel();
-    } finally {
-      removeLoading();
-    }
-  });
-  buttonGroup.appendChild(newPptxButton);
-
-  container.appendChild(buttonGroup);
+  // Container - centered in viewport
+  const container = Div().id('control-panel-container').class('control-panel-container').children(buttonGroup).build();
   document.body.appendChild(container);
 };
