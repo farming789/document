@@ -296,7 +296,7 @@ r-button[type='text']::part(ran-btn-content) {
   font-size: 12px;
   color: #666;
 }
-.agent-panel-key-input,
+/* Native textarea keeps its own border/padding. */
 .agent-panel-input {
   width: 100%;
   box-sizing: border-box;
@@ -304,6 +304,12 @@ r-button[type='text']::part(ran-btn-content) {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font: inherit;
+}
+/* ranui r-input draws its own field — host carries layout only (no border). */
+.agent-panel-key-input,
+.agent-panel-ollama-model {
+  width: 100%;
+  box-sizing: border-box;
 }
 .agent-panel-conversation {
   flex: 1;
@@ -351,28 +357,15 @@ r-button[type='text']::part(ran-btn-content) {
   flex: 1;
   resize: none;
 }
+/* r-button (type="primary") supplies its own look — host carries layout only. */
 .agent-panel-send {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #2563eb;
-  color: #fff;
-  cursor: pointer;
   align-self: flex-end;
 }
-.agent-panel-send:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 
+/* r-select draws its own control — host carries layout only. */
 .agent-panel-provider {
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font: inherit;
-  background: #fff;
 }
 .agent-panel-note {
   font-size: 12px;
@@ -396,40 +389,17 @@ r-button[type='text']::part(ran-btn-content) {
   color: #555;
   cursor: pointer;
 }
-.agent-panel-clear {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
 .agent-panel-model-row {
   display: flex;
   gap: 8px;
 }
+/* r-select / r-button below render themselves — host carries layout only. */
 .agent-panel-model {
   flex: 1;
   min-width: 0;
-  padding: 6px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font: inherit;
-  background: #fff;
 }
 .agent-panel-load {
   flex-shrink: 0;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 12px;
-}
-.agent-panel-load:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 .agent-launcher {
@@ -451,11 +421,4 @@ r-button[type='text']::part(ran-btn-content) {
 .agent-launcher-hidden {
   display: none;
 }
-.agent-panel-quote {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 12px;
-}
+/* .agent-panel-quote / .agent-panel-clear are r-buttons — no host styling needed. */

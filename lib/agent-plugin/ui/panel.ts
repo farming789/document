@@ -14,8 +14,9 @@ import 'ranui/button';
 import 'ranui/input';
 import 'ranui/select';
 import 'ranui/checkbox';
+import { createEffect, signal } from 'ranui/builder';
 import { localStorageGetItem, localStorageSetItem } from 'ranuts/utils';
-import { type I18nMessages, t } from '../../i18n';
+import { getLanguage, type I18nMessages, t } from '../../i18n';
 import { getEditorApi } from '../editor-bridge';
 import { createProvider, defaultProviderId, type ProviderId } from '../llm/factory';
 import { getApiKey, setApiKey } from '../llm/keys';
@@ -218,6 +219,7 @@ export function createAgentPanel(): HTMLElement {
   textarea.rows = 2;
   textarea.placeholder = t('agentInputPlaceholder');
   const sendBtn = ranButton(t('agentSend'), 'agent-panel-send');
+  sendBtn.setAttribute('type', 'primary'); // ranui's emphasized button style
   inputRow.append(textarea, sendBtn);
 
   // ── Controller wiring ───────────────────────────────────────────────────
@@ -331,12 +333,9 @@ export function createAgentPanel(): HTMLElement {
     }
   });
 
-  let running = false;
-  const setRunning = (value: boolean): void => {
-    running = value;
-    sendBtn.textContent = value ? t('agentStop') : t('agentSend');
-    textarea.disabled = value;
-  };
+  // Reactive run state (ranui signal). The Send/Stop label + input lock derive
+  // from it through an effect below, so flipping it updates the UI on its own.
+  const [running, setRunning] = signal(false);
 
   const submit = async (): Promise<void> => {
     const text = textarea.value.trim();
@@ -361,7 +360,7 @@ export function createAgentPanel(): HTMLElement {
   };
 
   sendBtn.addEventListener('click', () => {
-    if (running) controller?.stop();
+    if (running()) controller?.stop();
     else void submit();
   });
   textarea.addEventListener('keydown', (e) => {
@@ -401,8 +400,12 @@ export function createAgentPanel(): HTMLElement {
     getEditorApi()?.asc_SetTrackRevisions((e as CheckedDetail).detail.checked);
   });
 
-  // Re-apply translatable labels when the app language changes.
-  const applyLabels = (): void => {
+  // Reactive labels: a `lang` signal bumped on languagechange drives one effect
+  // that re-applies every translatable label — replacing a manual re-render pass.
+  const [lang, setLang] = signal(getLanguage());
+  window.addEventListener('languagechange', () => setLang(getLanguage()));
+  createEffect(() => {
+    lang(); // subscribe: re-run whenever the language changes
     launcher.title = t('agentOpenTip');
     title.textContent = t('agentTitle');
     const selected = providerSelect.value;
@@ -416,10 +419,15 @@ export function createAgentPanel(): HTMLElement {
     quoteBtn.title = t('agentQuoteTip');
     clearBtn.textContent = t('agentClear');
     textarea.placeholder = t('agentInputPlaceholder');
-    sendBtn.textContent = running ? t('agentStop') : t('agentSend');
     syncProviderUi(); // refresh key placeholder / model hint in the new language
-  };
-  window.addEventListener('languagechange', applyLabels);
+  });
+  // Send/Stop label + input lock react to the run state (and language).
+  createEffect(() => {
+    const active = running();
+    lang();
+    sendBtn.textContent = active ? t('agentStop') : t('agentSend');
+    textarea.disabled = active;
+  });
 
   panel.append(header, settings, toolbar, conversation, inputRow);
   document.body.append(panel, launcher);
