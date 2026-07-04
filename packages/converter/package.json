@@ -7,9 +7,14 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -18,12 +23,21 @@
   },
   "dependencies": {
     "@ranuts/shared": "workspace:*",
-    "ranui": "0.1.10-alpha-27",
-    "ranuts": "0.1.0-alpha-23"
+    "ranui": "0.2.0-alpha.0",
+    "ranuts": "0.2.0-alpha.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
   },
-  "keywords": ["onlyoffice", "x2t", "wasm", "docx", "xlsx", "pptx", "pdf", "convert"],
+  "keywords": [
+    "onlyoffice",
+    "x2t",
+    "wasm",
+    "docx",
+    "xlsx",
+    "pptx",
+    "pdf",
+    "convert"
+  ],
   "license": "MIT"
 }

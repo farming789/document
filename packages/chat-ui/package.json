@@ -12,7 +12,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -20,12 +22,20 @@
     "prepare": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "ranui": "0.1.10-alpha-27",
-    "ranuts": "0.1.0-alpha-23"
+    "ranui": "0.2.0-alpha.0",
+    "ranuts": "0.2.0-alpha.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
   },
-  "keywords": ["chat", "im", "chat-ui", "messages", "streaming", "ui-component", "ranui"],
+  "keywords": [
+    "chat",
+    "im",
+    "chat-ui",
+    "messages",
+    "streaming",
+    "ui-component",
+    "ranui"
+  ],
   "license": "MIT"
 }

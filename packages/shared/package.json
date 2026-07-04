@@ -7,13 +7,30 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./document-utils": { "types": "./dist/document-utils.d.ts", "import": "./dist/document-utils.js" },
-    "./document-types": { "types": "./dist/document-types.d.ts", "import": "./dist/document-types.js" },
-    "./i18n": { "types": "./dist/i18n.d.ts", "import": "./dist/i18n.js" },
-    "./store": { "types": "./dist/store.d.ts", "import": "./dist/store.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./document-utils": {
+      "types": "./dist/document-utils.d.ts",
+      "import": "./dist/document-utils.js"
+    },
+    "./document-types": {
+      "types": "./dist/document-types.d.ts",
+      "import": "./dist/document-types.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n.d.ts",
+      "import": "./dist/i18n.js"
+    },
+    "./store": {
+      "types": "./dist/store.d.ts",
+      "import": "./dist/store.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -21,7 +38,7 @@
     "prepare": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "ranuts": "0.1.0-alpha-23"
+    "ranuts": "0.2.0-alpha.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
