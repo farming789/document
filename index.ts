@@ -66,7 +66,12 @@ const documentUrl = file || src;
 // Opens the document with editing/download disabled (#25, #85, #87).
 const isReadonly = parseReadonly(readonly);
 // Experimental AI agent panel: opt-in via ?agent=1 (also ?agent=true or bare ?agent).
-if (agent === '1' || agent === 'true' || agent === '') {
+const agentEnabled = agent === '1' || agent === 'true' || agent === '';
+// Expose the opt-in to the editor iframe (same-origin) so its injected patch only
+// adds the "AI" button when the agent feature is enabled — otherwise the button
+// stays hidden. See public/onlyoffice-v7-iframe-patch.js.
+(window as unknown as { __agentEnabled?: boolean }).__agentEnabled = agentEnabled;
+if (agentEnabled) {
   void import('./lib/agent-plugin').then(({ createAgentPanel }) => createAgentPanel());
 }
 // Bridge: the AI button injected into OnlyOffice's left menu lives inside the

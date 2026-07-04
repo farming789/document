@@ -144,7 +144,20 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
+  // The AI button is opt-in: it only appears when the top page enabled the agent
+  // feature (via ?agent=1). The top page (same-origin) exposes `__agentEnabled`;
+  // if we can't read it (cross-origin embed) default to hidden.
+  function agentEnabled() {
+    try {
+      var w = window.top || window.parent;
+      return !!(w && w.__agentEnabled);
+    } catch (e) {
+      return false;
+    }
+  }
+
   function startAiButtonInjection() {
+    if (!agentEnabled()) return; // no ?agent=1 → don't inject the AI button
     ensureAiButtonStyles();
     injectAiButton();
     // The left menu renders asynchronously and may re-render; keep the button
