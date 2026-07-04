@@ -19,7 +19,7 @@ import {
   toOpenAIMessages,
   toOpenAITools,
 } from './openai-format';
-import { DEFAULT_SYSTEM_PROMPT } from './prompt';
+import { CHAT_ONLY_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT } from './prompt';
 import type { LLMMessage, LLMProvider, LLMResponse, LLMToolDef } from './types';
 
 /** A selectable local model. `size` is an approximate download size. */
@@ -91,19 +91,35 @@ export interface WebLLMProviderOptions {
   engine?: WebLLMEngine;
   /** Called with download/load progress while the model initialises. */
   onProgress?: (progress: InitProgress) => void;
+  /**
+   * Chat-only mode: never forward tools to the engine, even when the runtime
+   * passes a registry. Small local models (7–8B) can't reliably emit
+   * `<tool_call>` structures — they crash on some models and mangle the format
+   * on others — so tool use with WebLLM is unreliable by design. Enabling this
+   * keeps the local model as a plain assistant (Q&A / rewrite) that never
+   * errors, and lets a real system prompt through (Hermes only forbids one when
+   * tools are present). It cannot edit the document; that's what cloud/Ollama
+   * are for. See docs/explorations/2026-06-28-local-vs-cloud-models-conclusion.md.
+   */
+  chatOnly?: boolean;
 }
 
 export class WebLLMProvider implements LLMProvider {
   readonly name = 'webllm';
   readonly model: string;
   private readonly systemPrompt: string;
+  private readonly chatOnly: boolean;
   private readonly onProgress?: (progress: InitProgress) => void;
   private engine?: WebLLMEngine;
   private enginePromise?: Promise<WebLLMEngine>;
 
   constructor(options: WebLLMProviderOptions = {}) {
     this.model = options.model ?? DEFAULT_WEBLLM_MODEL;
-    this.systemPrompt = options.systemPrompt ?? DEFAULT_SYSTEM_PROMPT;
+    this.chatOnly = options.chatOnly ?? false;
+    // In chat-only mode the model has no tools, so it must be framed as an advisor
+    // (guide the user, hand over paste-ready content) rather than a tool-driving
+    // editor — otherwise it promises edits it can't make. An explicit override wins.
+    this.systemPrompt = options.systemPrompt ?? (this.chatOnly ? CHAT_ONLY_SYSTEM_PROMPT : DEFAULT_SYSTEM_PROMPT);
     this.onProgress = options.onProgress;
     this.engine = options.engine;
   }
@@ -143,17 +159,33 @@ export class WebLLMProvider implements LLMProvider {
     return out;
   }
 
+  /**
+   * The tools actually forwarded to the engine: none in chat-only mode. Drop the
+   * whole registry so buildMessages takes the system-prompt path and the request
+   * carries no `tools`/`tool_choice` — the model just chats, never tripping
+   * Hermes' tool restrictions or fumbling the tool-call format.
+   */
+  private activeTools(tools: LLMToolDef[]): LLMToolDef[] {
+    return this.chatOnly ? [] : tools;
+  }
+
+  /** Common request body; only attaches `tools`/`tool_choice` when tools are live. */
+  private requestBody(messages: LLMMessage[], tools: LLMToolDef[]): Record<string, unknown> {
+    const active = this.activeTools(tools);
+    const body: Record<string, unknown> = { messages: this.buildMessages(messages, active), ...GENERATION_PARAMS };
+    if (active.length) {
+      body.tools = toOpenAITools(active);
+      body.tool_choice = 'auto';
+    }
+    return body;
+  }
+
   async chat(messages: LLMMessage[], tools: LLMToolDef[], signal?: AbortSignal): Promise<LLMResponse> {
     const engine = await this.getEngine();
     const onAbort = () => void engine.interruptGenerate?.();
     signal?.addEventListener('abort', onAbort, { once: true });
     try {
-      const completion = await engine.chat.completions.create({
-        messages: this.buildMessages(messages, tools),
-        tools: toOpenAITools(tools),
-        tool_choice: 'auto',
-        ...GENERATION_PARAMS,
-      });
+      const completion = await engine.chat.completions.create(this.requestBody(messages, tools));
       return parseOpenAIResponse(completion);
     } finally {
       signal?.removeEventListener('abort', onAbort);
@@ -176,10 +208,7 @@ export class WebLLMProvider implements LLMProvider {
       // chunks instead of a completion; the shared accumulator folds them back
       // into a completion that parses identically to the non-streaming path.
       const stream = (await engine.chat.completions.create({
-        messages: this.buildMessages(messages, tools),
-        tools: toOpenAITools(tools),
-        tool_choice: 'auto',
-        ...GENERATION_PARAMS,
+        ...this.requestBody(messages, tools),
         stream: true,
       })) as unknown as AsyncIterable<OpenAIStreamChunk>;
       const completion = await accumulateOpenAIStream(stream, onDelta, signal);

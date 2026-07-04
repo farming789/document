@@ -69,6 +69,8 @@ export interface I18nMessages {
   /** `{size}` placeholder is replaced with the model's download size. */
   agentModelFirstDownload: string;
   agentNoWebGPU: string;
+  agentLocalChatOnly: string;
+  agentSwitchCloud: string;
   agentReviewMode: string;
   agentQuote: string;
   agentQuoteTip: string;
@@ -119,6 +121,8 @@ const messages: Record<Language, I18nMessages> = {
     agentModelCached: '该模型已缓存，点击「加载模型」秒开（刷新页面也不会重新下载）。',
     agentModelFirstDownload: '首次使用需下载（{size}），之后浏览器缓存，刷新不再下载。',
     agentNoWebGPU: '当前浏览器不支持 WebGPU，无法使用本地模式。',
+    agentLocalChatOnly: '本地模型仅用于问答/改写，不会直接编辑文档。如需 AI 直接编辑文档，',
+    agentSwitchCloud: '切换到云端 →',
     agentReviewMode: '修订模式',
     agentQuote: '引用选区',
     agentQuoteTip: '把当前在文档/表格/幻灯片中选中的文字引用到输入框',
@@ -168,6 +172,9 @@ const messages: Record<Language, I18nMessages> = {
     agentModelFirstDownload:
       "First use downloads the model ({size}); it is then cached, so a refresh won't re-download.",
     agentNoWebGPU: 'This browser does not support WebGPU; local mode is unavailable.',
+    agentLocalChatOnly:
+      'The local model only answers and rewrites — it will not edit the document directly. For AI-driven editing, ',
+    agentSwitchCloud: 'switch to cloud →',
     agentReviewMode: 'Review mode',
     agentQuote: 'Quote selection',
     agentQuoteTip: 'Quote the text currently selected in the document/spreadsheet/slide into the input',

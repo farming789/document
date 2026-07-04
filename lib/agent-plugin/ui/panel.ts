@@ -21,7 +21,13 @@ import { getEditorApi } from '../editor-bridge';
 import { agentTools } from '../tools';
 import { createProvider, defaultProviderId, type ProviderId } from '@ranuts/agent-core/llm/factory';
 import { getApiKey, setApiKey } from '@ranuts/agent-core/llm/keys';
-import { DEFAULT_WEBLLM_MODEL, isModelCached, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '@ranuts/agent-core/llm/webllm';
+import {
+  DEFAULT_WEBLLM_MODEL,
+  isModelCached,
+  isWebGPUAvailable,
+  WEBLLM_MODELS,
+  WebLLMProvider,
+} from '@ranuts/agent-core/llm/webllm';
 import { ChatView, type ChatViewLabels } from '@ranuts/chat-ui';
 import { AgentChatController, type ChatTurn } from './controller';
 import { createHistoryStorage, historyToTurns } from './storage';
@@ -65,7 +71,8 @@ const KEY_PLACEHOLDER: Partial<Record<ProviderId, string>> = {
 };
 
 /** An r-button (ranui builder) with a label and class. */
-const ranButton = (text: string, className: string): HTMLElement => View('r-button').class(className).text(text).build();
+const ranButton = (text: string, className: string): HTMLElement =>
+  View('r-button').class(className).text(text).build();
 
 /** An r-select with r-option children and an initial value (ranui builder). */
 const ranSelect = (className: string, options: Array<{ value: string; label: string }>, value: string): ValueEl =>
@@ -175,6 +182,19 @@ export function createAgentPanel(): HTMLElement {
   // auto-load progress is visible; `:empty` collapses it when idle.
   const note = Div().class('agent-panel-note').build();
 
+  // Chat-only banner for WebLLM: explains the local model can't edit, with a
+  // clickable shortcut that flips the provider to cloud (and opens settings so the
+  // API-key field is right there). Separate from `note` so `note`'s transient
+  // status text (download progress, cache state) never wipes the shortcut.
+  const switchCloudLink = Span().class('agent-panel-link').text(t('agentSwitchCloud')).build();
+  switchCloudLink.setAttribute('role', 'button');
+  switchCloudLink.setAttribute('tabindex', '0');
+  const chatOnlyHint = Div()
+    .class('agent-panel-note agent-panel-chatonly')
+    .children(Span().text(t('agentLocalChatOnly')).build(), switchCloudLink)
+    .build();
+  chatOnlyHint.style.display = 'none';
+
   const settings = Div()
     .class('agent-panel-settings agent-panel-settings-hidden')
     .children(providerSelect, keyInput, ollamaModelInput, modelRow)
@@ -245,8 +265,34 @@ export function createAgentPanel(): HTMLElement {
     note.textContent = t('agentCheckingCache');
     const cached = await isModelCached(id);
     if (currentProvider() !== 'webllm' || modelSelect.value !== id) return; // changed meanwhile
+    // The chat-only banner (shown via syncProviderUi) already says the local model
+    // can't edit; `note` just carries the cache/download status.
     note.textContent = cached ? t('agentModelCached') : t('agentModelFirstDownload').replace('{size}', size);
   };
+
+  // The chat-only banner only makes sense when WebLLM is actually usable (selected
+  // + WebGPU present); every other provider/state hides it.
+  const syncChatOnlyHint = (): void => {
+    chatOnlyHint.style.display = currentProvider() === 'webllm' && isWebGPUAvailable() ? '' : 'none';
+  };
+
+  // "Switch to cloud" shortcut: flip the provider to Claude, drop the stale
+  // controller, and reveal settings so the API-key field is visible immediately.
+  const switchToCloud = (): void => {
+    providerSelect.value = 'anthropic';
+    providerSelect.setAttribute('value', 'anthropic'); // reflect in the r-select UI too
+    controller = null;
+    settings.classList.remove('agent-panel-settings-hidden');
+    syncProviderUi();
+  };
+  switchCloudLink.addEventListener('click', switchToCloud);
+  switchCloudLink.addEventListener('keydown', (event) => {
+    const key = (event as KeyboardEvent).key;
+    if (key === 'Enter' || key === ' ') {
+      event.preventDefault();
+      switchToCloud();
+    }
+  });
 
   const syncProviderUi = (): void => {
     const id = currentProvider();
@@ -254,6 +300,7 @@ export function createAgentPanel(): HTMLElement {
     keyInput.style.display = isCloud ? '' : 'none';
     modelRow.style.display = id === 'webllm' ? '' : 'none';
     ollamaModelInput.style.display = id === 'ollama' ? '' : 'none';
+    syncChatOnlyHint();
     if (isCloud) {
       keyInput.placeholder = KEY_PLACEHOLDER[id] ?? '';
       keyInput.value = getApiKey(id) ?? '';
@@ -285,8 +332,13 @@ export function createAgentPanel(): HTMLElement {
       if (!isWebGPUAvailable()) return null;
       const kind = `webllm:${modelSelect.value}`;
       if (!controller || controllerKind !== kind) {
+        // Local 7–8B models can't reliably drive tool calls (they crash or mangle
+        // the tool-call format), so WebLLM runs chat-only: a plain assistant that
+        // never errors but can't edit the document. Tool-driven editing is what the
+        // cloud/Ollama providers are for.
         webllmProvider = new WebLLMProvider({
           model: modelSelect.value,
+          chatOnly: true,
           onProgress: (p) => (note.textContent = p.text),
         });
         controller = new AgentChatController(webllmProvider, appendTurn, controllerOptions);
@@ -416,7 +468,7 @@ export function createAgentPanel(): HTMLElement {
     syncProviderUi(); // refresh key placeholder / model hint in the new language
   });
 
-  panel.append(header, settings, note, chat.el);
+  panel.append(header, settings, note, chatOnlyHint, chat.el);
   document.body.append(panel, launcher);
   setOpen(true); // start open + docked
 

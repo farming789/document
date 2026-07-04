@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  DEFAULT_WEBLLM_MODEL,
-  isWebGPUAvailable,
-  WEBLLM_MODELS,
-  WebLLMProvider,
-} from '@ranuts/agent-core/llm/webllm';
+import { DEFAULT_WEBLLM_MODEL, isWebGPUAvailable, WEBLLM_MODELS, WebLLMProvider } from '@ranuts/agent-core/llm/webllm';
 import { createProvider, defaultProviderId } from '@ranuts/agent-core/llm/factory';
+import { CHAT_ONLY_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT } from '@ranuts/agent-core/llm/prompt';
 
 describe('WebLLMProvider', () => {
   it('reports WebGPU unavailable under jsdom', () => {
@@ -45,6 +41,28 @@ describe('WebLLMProvider', () => {
     expect(body.messages[0].role).toBe('user');
     expect(body.messages[0].content).toContain('go');
     expect(result.text).toBe('done');
+  });
+
+  it('chatOnly drops tools: no tools/tool_choice sent, and a real system prompt is kept', async () => {
+    const create = vi.fn().mockResolvedValue({ choices: [{ message: { content: 'hi' }, finish_reason: 'stop' }] });
+    const provider = new WebLLMProvider({ engine: { chat: { completions: { create } } }, chatOnly: true });
+    await provider.chat(
+      [{ role: 'user', content: 'go' }],
+      [{ name: 'insert_text', description: 'd', inputSchema: { type: 'object' } }],
+    );
+    const body = create.mock.calls[0][0];
+    // Tools are stripped, so the request carries no tool fields...
+    expect(body.tools).toBeUndefined();
+    expect(body.tool_choice).toBeUndefined();
+    // ...and without tools the Hermes restriction lifts, so a system prompt is allowed again —
+    // and it must be the advisor prompt (no tools), not the tool-driving default.
+    const system = body.messages.find((m: { role: string }) => m.role === 'system');
+    expect(system?.content).toBe(CHAT_ONLY_SYSTEM_PROMPT);
+    expect(system?.content).not.toBe(DEFAULT_SYSTEM_PROMPT);
+  });
+
+  it('an explicit systemPrompt overrides the chat-only advisor default', () => {
+    expect(new WebLLMProvider({ chatOnly: true, systemPrompt: 'custom' })['systemPrompt']).toBe('custom');
   });
 
   it('preload() resolves with an injected engine without loading the SDK', async () => {

@@ -352,9 +352,20 @@ body.agent-docked #app iframe {
 .agent-panel-note {
   font-size: 12px;
   color: #888;
+  white-space: pre-line; /* honour \n so multi-line hints (e.g. cache status + chat-only note) stack */
 }
 .agent-panel-note:empty {
   display: none;
+}
+.agent-panel-link {
+  color: #2563eb;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+.agent-panel-link:hover,
+.agent-panel-link:focus-visible {
+  color: #1d4ed8;
 }
 /* (Review / quote / clear moved into ChatView's `.cui-actions` slot above the
    input; the old top toolbar is gone.) */
