@@ -176,6 +176,63 @@
     if (btn) btn.classList.toggle('active', !!event.data.open);
   });
 
+  // ── Search / scroll-to-paragraph handler ────────────────────────────────
+  // Accepts { type: 'document:execute-command', payload: { action: 'search', text: '...', direction: 'next'|'prev' } }
+  window.addEventListener('message', function (event) {
+    var d = event.data;
+    if (!d || d.type !== 'document:execute-command') return;
+    var p = d.payload || {};
+    if (p.action !== 'search') return;
+    var text = p.text;
+    if (!text) return;
+    var isForward = p.direction !== 'prev';
+
+    function doSearch() {
+      var ed = window.Asc && window.Asc.editor;
+      if (!ed) { console.warn('[SearchPatch] Asc.editor not ready'); return; }
+
+      try {
+        // Enable search result highlighting
+        if (typeof ed.asc_selectSearchingResults === 'function') {
+          ed.asc_selectSearchingResults(true);
+        }
+        var result = 0;
+        var AscCommon = window.AscCommon;
+        if (AscCommon && typeof AscCommon.CSearchSettings === 'function' && typeof ed.asc_findText === 'function') {
+          var s = new AscCommon.CSearchSettings();
+          s.put_Text(text);
+          result = ed.asc_findText(s, isForward);
+        } else if (typeof ed.asc_findText === 'function') {
+          result = ed.asc_findText(text, isForward);
+        }
+        console.log('[SearchPatch] asc_findText result count:', result);
+        // Try to scroll to the found selection
+        if (result > 0 && ed.ma && typeof ed.ma.oee === 'function') {
+          try { ed.ma.oee(); } catch(e2) {}
+        }
+      } catch (e) {
+        console.error('[SearchPatch] search error:', e);
+      }
+    }
+
+    // If editor not ready yet, retry a few times
+    if (window.Asc && window.Asc.editor) {
+      doSearch();
+    } else {
+      var retries = 0;
+      var timer = setInterval(function () {
+        retries++;
+        if (window.Asc && window.Asc.editor) {
+          clearInterval(timer);
+          doSearch();
+        } else if (retries >= 30) {
+          clearInterval(timer);
+          console.warn('[SearchPatch] Asc.editor not ready after 15s');
+        }
+      }, 500);
+    }
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startAiButtonInjection);
   } else {

@@ -10,7 +10,8 @@ type EmbedMessageType =
   | 'document:open-buffer'
   | 'document:set-readonly'
   | 'document:save'
-  | 'document:get-state';
+  | 'document:get-state'
+  | 'document:execute-command';
 
 type EmbedMessage = {
   id?: string;
@@ -180,6 +181,15 @@ async function handleMessage(event: MessageEvent): Promise<void> {
           message.id,
         );
         break;
+
+      case 'document:execute-command': {
+        // Forward to inner frameEditor iframe where the patch script handles it
+        const frameEditor = document.querySelector<HTMLIFrameElement>('iframe[name="frameEditor"]');
+        if (frameEditor?.contentWindow) {
+          frameEditor.contentWindow.postMessage(message, '*');
+        }
+        break;
+      }
 
       default:
         break;
