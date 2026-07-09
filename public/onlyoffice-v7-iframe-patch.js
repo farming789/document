@@ -233,6 +233,69 @@
     }
   });
 
+  // ── Revision accept handler ───────────────────────────────────────────
+  // Accepts { type: 'document:apply-revision', payload: { oldText: '...', newText: '...' } }
+  // Formats old text as red strikethrough, appends new text with light-blue background.
+  window.addEventListener('message', function (event) {
+    var d = event.data;
+    if (!d || d.type !== 'document:apply-revision') return;
+    var p = d.payload || {};
+    var targetOldText = String(p.oldText || '').trim();
+    var targetNewText = String(p.newText || '').trim();
+    if (!targetOldText) return;
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function doApplyRevision() {
+      var ed = window.Asc && window.Asc.editor;
+      if (!ed) { console.warn('[RevisionPatch] Asc.editor not ready'); return; }
+
+      try {
+        // Step 1: search and select the old text
+        var AscCommon = window.AscCommon;
+        if (AscCommon && typeof AscCommon.CSearchSettings === 'function' && typeof ed.asc_findText === 'function') {
+          var s = new AscCommon.CSearchSettings();
+          s.put_Text(targetOldText);
+          ed.asc_findText(s, true);
+        } else if (typeof ed.asc_findText === 'function') {
+          ed.asc_findText(targetOldText, true);
+        }
+
+        // Step 2: replace selection with formatted HTML
+        if (typeof ed.pluginMethod_PasteHtml === 'function') {
+          var escapedOld = escapeHtml(targetOldText).replace(/\r\n|\r|\n/g, '<br/>');
+          var escapedNew = escapeHtml(targetNewText).replace(/\r\n|\r|\n/g, '<br/>');
+          var html =
+            '<span style="color:#FF0000;text-decoration:line-through">' + escapedOld + '</span>' +
+            '<span>&nbsp;&nbsp;</span>' +
+            '<span style="background-color:#ADD8E6;color:#000000">' + escapedNew + '</span>';
+          ed.pluginMethod_PasteHtml(html);
+          console.log('[RevisionPatch] revision applied, old length:', targetOldText.length, ', new length:', targetNewText.length);
+        }
+      } catch (e) {
+        console.error('[RevisionPatch] apply revision error:', e);
+      }
+    }
+
+    if (window.Asc && window.Asc.editor) {
+      doApplyRevision();
+    } else {
+      var retries = 0;
+      var timer = setInterval(function () {
+        retries++;
+        if (window.Asc && window.Asc.editor) {
+          clearInterval(timer);
+          doApplyRevision();
+        } else if (retries >= 30) {
+          clearInterval(timer);
+          console.warn('[RevisionPatch] Asc.editor not ready after 15s');
+        }
+      }, 500);
+    }
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startAiButtonInjection);
   } else {

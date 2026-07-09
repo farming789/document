@@ -11,7 +11,8 @@ type EmbedMessageType =
   | 'document:set-readonly'
   | 'document:save'
   | 'document:get-state'
-  | 'document:execute-command';
+  | 'document:execute-command'
+  | 'document:apply-revision';
 
 type EmbedMessage = {
   id?: string;
@@ -141,6 +142,7 @@ async function handleMessage(event: MessageEvent): Promise<void> {
 
   parentOrigin = normalizeTargetOrigin(event.origin);
   const payload = message.payload || {};
+  console.log('[embed-api] handling:', message.type, 'id:', message.id);
 
   try {
     switch (message.type) {
@@ -191,10 +193,24 @@ async function handleMessage(event: MessageEvent): Promise<void> {
         break;
       }
 
+      case 'document:apply-revision': {
+        // Forward to inner frameEditor iframe where the patch script handles
+        // revision formatting (needs AscCommon.CSearchSettings for asc_findText).
+        console.log('[embed-api] apply-revision: forwarding to inner iframe, oldText:', String(payload?.oldText || '').substring(0, 30));
+        const frameEditor = document.querySelector<HTMLIFrameElement>('iframe[name="frameEditor"]');
+        console.log('[embed-api] apply-revision: frameEditor found?', !!frameEditor, 'contentWindow?', !!frameEditor?.contentWindow);
+        if (frameEditor?.contentWindow) {
+          frameEditor.contentWindow.postMessage(message, '*');
+          console.log('[embed-api] apply-revision: forwarded successfully');
+        }
+        break;
+      }
+
       default:
         break;
     }
   } catch (error) {
+    console.error('[embed-api] ERROR in handleMessage for type:', message.type, error);
     postToParent(
       'document:error',
       {
