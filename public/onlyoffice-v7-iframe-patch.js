@@ -253,8 +253,49 @@
       if (!ed) { console.warn('[RevisionPatch] Asc.editor not ready'); return; }
 
       try {
-        // Step 1: search and select the old text
         var AscCommon = window.AscCommon;
+
+        // ── Step 1: Detect font from a small MIDDLE substring ──────────────
+        // Instead of trying to read font from the full (possibly mixed-font)
+        // selection, we first select a ~10-char slice from the middle — almost
+        // certainly single-font — then re-select the full old text for PasteHtml.
+        var fontStyle = '';
+        try {
+          if (typeof ed.Uze === 'function') {
+            // Pick a probe: short text → use whole; long text → ~10 chars from middle
+            var probeText;
+            if (targetOldText.length <= 15) {
+              probeText = targetOldText;
+            } else {
+              var midStart = Math.max(0, Math.floor(targetOldText.length / 2) - 5);
+              probeText = targetOldText.substring(midStart, midStart + 10);
+            }
+
+            if (probeText.length >= 2 && typeof ed.asc_findText === 'function') {
+              // Select the probe substring
+              if (AscCommon && typeof AscCommon.CSearchSettings === 'function') {
+                var probeSearch = new AscCommon.CSearchSettings();
+                probeSearch.put_Text(probeText);
+                ed.asc_findText(probeSearch, true);
+              } else {
+                ed.asc_findText(probeText, true);
+              }
+
+              // Read font from this single-font probe selection
+              var uz = ed.Uze();
+              if (uz && uz.ab) {
+                var ab = uz.ab;
+                var fontName = (ab.gf && ab.gf.Aa) || 'SimSun';
+                var fontSize = ab.Eb || 0;
+                if (fontSize) fontStyle += 'font-size:' + fontSize + 'pt;';
+                fontStyle += 'font-family:\'' + fontName + '\';';
+              }
+            }
+          }
+        } catch (_) {}
+        if (!fontStyle) fontStyle = 'font-family:\'SimSun\';'; // ultimate fallback
+
+        // ── Step 2: Select the FULL old text for PasteHtml replacement ────
         if (AscCommon && typeof AscCommon.CSearchSettings === 'function' && typeof ed.asc_findText === 'function') {
           var s = new AscCommon.CSearchSettings();
           s.put_Text(targetOldText);
@@ -263,44 +304,38 @@
           ed.asc_findText(targetOldText, true);
         }
 
-        // Step 2: replace selection with formatted HTML
-        // NOTE: background-color is deliberately omitted from new-text span.
-        // When PasteHtml passes background-color to the OOXML converter,
-        // the resulting w:shd element renders as black in exported DOCX.
-        // Instead, we apply highlighting via the native SetHighlight API (Step 3).
+        // ── Step 3: Replace selection with formatted HTML ──────────────────
+        // font-family is explicitly set (detected above or SimSun fallback).
+        // background-color deliberately omitted (use SetHighlight instead).
         if (typeof ed.pluginMethod_PasteHtml === 'function') {
           var escapedOld = escapeHtml(targetOldText).replace(/\r\n|\r|\n/g, '<br/>');
           var escapedNew = escapeHtml(targetNewText).replace(/\r\n|\r|\n/g, '<br/>');
           var html =
+            '<div style="' + fontStyle + '">' +
             '<span style="color:#FF0000;text-decoration:line-through">' + escapedOld + '</span>' +
             '<span>&nbsp;&nbsp;</span>' +
-            '<span>' + escapedNew + '</span>';
+            '<span>' + escapedNew + '</span>' +
+            '</div>';
           ed.pluginMethod_PasteHtml(html);
-          console.log('[RevisionPatch] revision applied, old length:', targetOldText.length, ', new length:', targetNewText.length);
+          console.log('[RevisionPatch] revision applied, old:', targetOldText.length, 'new:', targetNewText.length);
+        }
 
-          // Step 3: Apply native highlight to the new text.
-          // SetHighlight produces w:highlight in OOXML — correctly handled on export,
-          // unlike background-color which the DOCX converter mangles to black.
-          if (targetNewText && typeof ed.SetHighlight === 'function') {
-            setTimeout(function () {
-              try {
-                // Find and select the new text we just inserted
-                var AscCommon2 = window.AscCommon;
-                if (AscCommon2 && typeof AscCommon2.CSearchSettings === 'function' && typeof ed.asc_findText === 'function') {
-                  var searchSettings2 = new AscCommon2.CSearchSettings();
-                  searchSettings2.put_Text(targetNewText);
-                  ed.asc_findText(searchSettings2, true);
-                } else if (typeof ed.asc_findText === 'function') {
-                  ed.asc_findText(targetNewText, true);
-                }
-                // cyan is the closest predefined color to #ADD8E6 (light blue)
-                ed.SetHighlight('cyan');
-                console.log('[RevisionPatch] highlight applied to new text');
-              } catch (e2) {
-                console.warn('[RevisionPatch] SetHighlight failed:', e2);
+        // ── Step 4: Highlight new text with native SetHighlight ────────────
+        if (targetNewText && typeof ed.SetHighlight === 'function') {
+          setTimeout(function () {
+            try {
+              if (AscCommon && typeof AscCommon.CSearchSettings === 'function' && typeof ed.asc_findText === 'function') {
+                var ss2 = new AscCommon.CSearchSettings();
+                ss2.put_Text(targetNewText);
+                ed.asc_findText(ss2, true);
+              } else if (typeof ed.asc_findText === 'function') {
+                ed.asc_findText(targetNewText, true);
               }
-            }, 100);
-          }
+              ed.SetHighlight('cyan');
+            } catch (e2) {
+              console.warn('[RevisionPatch] SetHighlight failed:', e2);
+            }
+          }, 100);
         }
       } catch (e) {
         console.error('[RevisionPatch] apply revision error:', e);
