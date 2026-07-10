@@ -311,11 +311,8 @@
           var escapedOld = escapeHtml(targetOldText).replace(/\r\n|\r|\n/g, '<br/>');
           var escapedNew = escapeHtml(targetNewText).replace(/\r\n|\r|\n/g, '<br/>');
           var html =
-            '<div style="' + fontStyle + '">' +
-            '<span style="color:#FF0000;text-decoration:line-through">' + escapedOld + '</span>' +
-            '<span>&nbsp;&nbsp;</span>' +
-            '<span>' + escapedNew + '</span>' +
-            '</div>';
+            '<span style="' + fontStyle + 'color:#FF0000;text-decoration:line-through">' + escapedOld + '</span>' +
+            '<span style="' + fontStyle + '">' + escapedNew + '</span>';
           ed.pluginMethod_PasteHtml(html);
           console.log('[RevisionPatch] revision applied, old:', targetOldText.length, 'new:', targetNewText.length);
         }
