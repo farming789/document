@@ -397,6 +397,7 @@ export function createEditorInstance(config: {
             name: 'Guest',
           },
           customization: {
+            zoom: -2,
             help: false,
             about: false,
             hideRightMenu: true,
