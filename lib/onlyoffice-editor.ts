@@ -397,7 +397,7 @@ export function createEditorInstance(config: {
             name: 'Guest',
           },
           customization: {
-            zoom: -1, // -1 = Fit to Page（适合页面），-2 = Fit to Width（适合宽度）
+            zoom: -2, // -1 = Fit to Page（适合页面），-2 = Fit to Width（适合宽度）
             help: false,
             about: false,
             hideRightMenu: true,
